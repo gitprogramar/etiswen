@@ -159,7 +159,6 @@
 		}
 		
 		function raiseError($ex) {
-			$to="info@programar.com.ar";
 			//send 
 			//sendMail($ex->getMessage(), "Error en el sitio web", $to);						
 		}		
