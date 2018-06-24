@@ -158,7 +158,7 @@
 		// notify customer
 		$utils->sendMail(
 			$htmlMail, 		
-			"Renovar Servicio - Programar.com.ar",
+			"Renovar Servicio",
 			$email,
 			"",
 			"",
@@ -171,7 +171,7 @@
 		$html .= '<p><strong>Correo: '.$email.'</strong></p>';
 		$html .= '<p><strong>'.$arrayReplace[2].' restantes.</strong></p>';
 		
-		// notify PROGRAMAR
+		// notify
 		$utils->sendMail(
 			$html, 		
 			"Vencimiento de ".$arrayReplace[1]			
