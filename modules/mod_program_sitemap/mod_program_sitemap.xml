@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="module" version="1.0" client="site" method="upgrade">
+    <name>Site Map</name>
+    <author>Programar</author>
+    <version>1.0</version>
+    <description>Renders Site Map</description>
+    <files>
+        <filename>mod_program_sitemap.xml</filename>
+        <filename module="mod_program_sitemap">mod_program_sitemap.php</filename>
+        <filename>index.html</filename>
+        <filename>tmpl/default.php</filename>
+        <filename>tmpl/index.html</filename>
+    </files>
+    <config>
+    </config>
+</extension>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="module" version="1.0" client="site" method="upgrade">
+    <name>Site Menu</name>
+    <author>Programar</author>
+    <version>1.0</version>
+    <description>Renders Site Menu</description>
+    <files>
+        <filename>mod_program_menu.xml</filename>
+        <filename module="mod_program_menu">mod_program_menu.php</filename>
+        <filename>index.html</filename>
+        <filename>tmpl/default.php</filename>
+        <filename>tmpl/index.html</filename>
+    </files>
+    <config>
+    </config>
+</extension>
