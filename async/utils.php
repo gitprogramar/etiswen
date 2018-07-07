@@ -16,12 +16,14 @@
 			
 		}
 		
-		function sendMail($content, $subject="", $to="", $toName="", $fromName="", $arraySearch=array(), $arrayReplace=array()) 
+		function sendMail($content, $subject="", $to="", $toName="", $from="", $fromName="", $arraySearch=array(), $arrayReplace=array()) 
 		{
 			// default data
 			$config = JFactory::getConfig();
 			if(!isset($to) || strlen(trim($to)) == 0)
 				$to = $config->get('mailfrom');
+			if(!isset($from) || strlen(trim($from)) == 0)
+				$from = $config->get('mailfrom');
 			if(!isset($fromName) || strlen(trim($fromName)) == 0)
 				$fromName = $config->get('fromname');			
 			if(!isset($subject) || strlen(trim($subject)) == 0)
@@ -65,7 +67,7 @@
 			//Set who the message is to be sent from
 			$mail->setFrom($config->get('mailfrom'), $fromName);
 			//Set an alternative reply-to address
-			//$mail->addReplyTo($config->get('mailfrom'), $fromName);
+			$mail->addReplyTo($from, $fromName);
 			//Set who the message is to be sent to
 			$mail->addAddress($to, $toName);
 			//Set the subject line
@@ -162,6 +164,96 @@
 			//send 
 			//sendMail($ex->getMessage(), "Error en el sitio web", $to);						
 		}		
+		
+		// Sort an array by a specific key. Maintains index association
+		/* Usage:
+			$people = array(
+				'id' => 12345,
+				'first_name' => 'Joe',
+				'surname' => 'Bloggs',
+				'age' => 23,
+				'sex' => 'm'
+			};
+			sortArray($people, 'age', SORT_DESC); // Sort by oldest first
+		*/
+		function sortArray($array, $on, $order=SORT_ASC)
+		{
+			$new_array = array();
+			$sortable_array = array();
+
+			if (count($array) > 0) {
+				foreach ($array as $k => $v) {
+					if (is_array($v)) {
+						foreach ($v as $k2 => $v2) {
+							if ($k2 == $on) {
+								$sortable_array[$k] = $v2;
+							}
+						}
+					} else {
+						$sortable_array[$k] = $v;
+					}
+				}
+
+				switch ($order) {
+					case SORT_ASC:
+						asort($sortable_array);
+					break;
+					case SORT_DESC:
+						arsort($sortable_array);
+					break;
+				}
+
+				foreach ($sortable_array as $k => $v) {
+					$new_array[$k] = $array[$k];
+				}
+			}
+
+			return $new_array;
+		}
+		
+		/* Display child links */
+		function childLinks($pageTitle) {
+			$html = '<div class="column-center a-start column-pad"><p>Encontrá toda la información sobre ';
+			$html .= $pageTitle . ' navegando los siguientes links</p>';
+			$html .= '<div id="showChildPages" class="row-center j-start">';
+			$html .= '<ul style="padding-top:10px;">';
+			$sitemenu = JFactory::getApplication('site')->getMenu();
+			$mainmenu = $sitemenu->getItems("menutype", "mainmenu");
+				
+			foreach($mainmenu as $menu) {	
+				if ($menu->parent_id == 1 && strtolower($menu->title) == strtolower($pageTitle)) {
+					$html .= '<li>';
+					if ($menu->home == "1") {
+						$menu->route = "";
+					}
+					$html .= '<a href="/' . $menu->route . '">' . $menu->title . '</a>';
+					$html .= $this->recursiveChildLinks($mainmenu, $menu->id);
+					$html .= '</li>';
+				}
+			}
+			return $html .= '</div></div>';
+		}
+		
+		function recursiveChildLinks($items, $parentId) {
+			$hasChilds = false;
+			$html = "";
+			foreach($items as $item) {
+				if ($item->parent_id == $parentId) {
+					if (!$hasChilds) {
+						$html .= '<ul style="padding-top:10px;">';
+						$hasChilds = true;
+					}
+					$html .= '<li>';
+					$html .= '<a href="/' . $item->route . '">' . $item->title . '</a>';
+					$html .= $this->recursiveChildLinks($items, $item->id);
+					$html .= '</li>';
+				}
+			}
+			if ($hasChilds) {
+				$html .= '</ul>';
+			}
+			return $html;
+		}
 		
 		function runTime() {
 			//server time

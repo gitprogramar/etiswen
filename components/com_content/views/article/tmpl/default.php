@@ -8,6 +8,7 @@
  */
 
 defined('_JEXEC') or die;
+require_once ( JPATH_ROOT .'/async/utils.php');
 
 JHtml::addIncludePath(JPATH_COMPONENT . '/helpers');
 
@@ -148,7 +149,16 @@ JHtml::_('behavior.caption');
 		echo $this->item->toc;
 	endif; ?>
 	<div itemprop="articleBody">
-		<?php echo $this->item->text; ?>
+		<?php 
+			if(strlen(trim($this->item->text)) > 0) {
+				echo $this->item->text;
+			}
+			else {
+				/* Display child links for empty pages */
+				$utils = new Utils();
+				echo $utils->childLinks($this->escape($this->item->title));
+			}
+		 ?>
 	</div>
 
 	<?php if ($info == 1 || $info == 2) : ?>

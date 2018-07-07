@@ -162,6 +162,7 @@
 			$email,
 			"",
 			"",
+			"",
 			array("[customer]", "[service]", "[days]"),
 			$arrayReplace
 		);

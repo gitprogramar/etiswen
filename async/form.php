@@ -86,7 +86,7 @@
 			$name = JRequest::getVar('name', '', 'get');
 			$subject = "Consulta de " . (strlen($name) > 0 ? $name." - " : "") . $config->get('sitename'); 
 			$utils = new Utils();
-			$utils->sendMail($content, $subject, "", "", $name);
+			$utils->sendMail($content, $subject, "", "", JRequest::getVar('email', '', 'get'), $name);
 			// message sent
 			$returnCode = 1;
 		} 

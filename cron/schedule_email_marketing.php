@@ -241,6 +241,7 @@
 			$email,
 			"",
 			"",
+			"",
 			array("[Usuario]", "[Grupo]", "[Dominio]", "[Email]"),
 			$arrayReplace
 		);*/
