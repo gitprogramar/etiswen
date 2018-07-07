@@ -59,8 +59,27 @@
 		
 		$xml .= '</urlset>';
 		
-		// write xml	
+		// write sitemap	
 		file_put_contents(STORAGE, $xml);
+		
+		// write robots.txt	
+		$txt = "User-agent: *".LB;
+		$txt .= "Disallow: /administrator/".LB;
+		$txt .= "Disallow: /bin/".LB;
+		$txt .= "Disallow: /cache/".LB;
+		$txt .= "Disallow: /cli/".LB;
+		$txt .= "Disallow: /components/".LB;
+		$txt .= "Disallow: /includes/".LB;
+		$txt .= "Disallow: /installation/".LB;
+		$txt .= "Disallow: /language/".LB;
+		$txt .= "Disallow: /layouts/".LB;
+		$txt .= "Disallow: /linq/".LB;
+		$txt .= "Disallow: /logs/".LB;
+		$txt .= "Disallow: /mercadopago/".LB;
+		$txt .= "Disallow: /panel/".LB;
+		$txt .= "Disallow: /tmp/".LB;
+		$txt .= "Sitemap: ".$url."/sitemap.xml";
+		file_put_contents(getcwd().'/public_html/robots.txt', $txt);
 	}	
 	
 	function lastModified() {
