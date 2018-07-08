@@ -48,6 +48,11 @@
 	$html = str_replace($arraySearch, "has-sub", $html);
 	$html = $utils->before('<nav id="cssmenu">', $moduleHtml) .  $html . $utils->after('</nav>', $moduleHtml);
 	
+	if(strpos($html, "<?php") !== false)
+	{
+		eval('?>'.$html.'<?php;');
+	}
+	
 	
 	function menuRecursiveChilds($items, $parentId, $activeMenuId, &$arraySearch) {
 		$hasChilds = false;

@@ -141,7 +141,10 @@
 		}
 		
 		/* Get default editor customer */
-		function customerGet($id=569) {
+		function customerGet($user="Editor", $template=null) {
+			$id = 569;
+			if($user == "Programar")
+				$id = 556;
 			$user = JFactory::getUser($id);
 			$fields = FieldsHelper::getFields('com_users.user',  $user);
 			$parses = array(' ', '(', ')', '+', '-');
@@ -151,6 +154,11 @@
 			$customer->customernamePrsed = "";
 			$customer->domain = "";
 			$customer->templateId = "1";
+			$customer->style = "";
+			$customer->font1 = "";
+			$customer->font2 = "";			
+			$customer->fontweight1 = "";
+			$customer->fontweight2 = "";
 			$customer->primarycolor = "";
 			$customer->secondarycolor = "";
 			$customer->color1 = "";
@@ -186,7 +194,17 @@
 				elseif($field->name == "description")
 					$customer->description = $field->value;
 				elseif($field->name == "templateid")
-					$customer->templateId = $field->value;
+					$customer->templateId = isset($template) ? $template : $field->value;
+				elseif($field->name == "style-".$customer->templateId)
+					$customer->style = $field->value;
+				elseif($field->name == "font1-".$customer->templateId)
+					$customer->font1 = $field->value;
+				elseif($field->name == "font2-".$customer->templateId)
+					$customer->font2 = $field->value;
+				elseif($field->name == "fontweight1-".$customer->templateId)
+					$customer->fontweight1 = $field->value;
+				elseif($field->name == "fontweight2-".$customer->templateId)
+					$customer->fontweight2 = $field->value;
 				elseif($field->name == "primarycolor-".$customer->templateId)
 					$customer->primarycolor = $field->value;
 				elseif($field->name == "secondarycolor-".$customer->templateId)
