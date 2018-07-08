@@ -140,6 +140,107 @@
 			$this->logout("site");
 		}
 		
+		/* Get default editor customer */
+		function customerGet($id=569) {
+			$user = JFactory::getUser($id);
+			$fields = FieldsHelper::getFields('com_users.user',  $user);
+			$parses = array(' ', '(', ')', '+', '-');
+			$customer = new stdClass();
+			$customer->email = $user->email;
+			$customer->customername = "";
+			$customer->customernamePrsed = "";
+			$customer->domain = "";
+			$customer->templateId = "1";
+			$customer->primarycolor = "";
+			$customer->secondarycolor = "";
+			$customer->color1 = "";
+			$customer->color2 = "";
+			$customer->color3 = "";
+			$customer->color4 = "";
+			$customer->background1 = "";
+			$customer->background2 = "";
+			$customer->background3 = "";
+			$customer->description = "";
+			$customer->address = "";
+			$customer->zone = "";
+			$customer->postal = "";
+			$customer->phone = "";
+			$customer->cel = "";
+			$customer->cel2 = "";
+			$customer->phoneParsed = "";
+			$customer->celParsed = "";
+			$customer->cel2Parsed = "";
+			$customer->facebook = "";
+			$customer->twitter = "";
+			$customer->youtube = "";
+			$customer->instagram = "";
+			$customer->linkedin = "";
+			$customer->google  = "";
+			foreach($fields as $field) {
+				if($field->name == "customername") {
+					$customer->customername = $field->value;
+					$customer->customernameParsed = str_replace(' ', '%20', $field->value);
+				}
+				elseif($field->name == "domain")
+					$customer->domain = $field->value;
+				elseif($field->name == "description")
+					$customer->description = $field->value;
+				elseif($field->name == "templateid")
+					$customer->templateId = $field->value;
+				elseif($field->name == "primarycolor-".$customer->templateId)
+					$customer->primarycolor = $field->value;
+				elseif($field->name == "secondarycolor-".$customer->templateId)
+					$customer->secondarycolor = $field->value;
+				elseif($field->name == "color1-".$customer->templateId)
+					$customer->color1 = $field->value;
+				elseif($field->name == "color2-".$customer->templateId)
+					$customer->color2 = $field->value;
+				elseif($field->name == "color3-".$customer->templateId)
+					$customer->color3 = $field->value;
+				elseif($field->name == "color4-".$customer->templateId)
+					$customer->color4 = $field->value;
+				elseif($field->name == "background1-".$customer->templateId)
+					$customer->background1 = $field->value;
+				elseif($field->name == "background2-".$customer->templateId)
+					$customer->background2 = $field->value;
+				elseif($field->name == "background3-".$customer->templateId)
+					$customer->background3 = $field->value;
+				elseif($field->name == "description")
+					$customer->description = $field->value;
+				elseif($field->name == "address")
+					$customer->address = $field->value;
+				elseif($field->name == "zone")
+					$customer->zone = $field->value;
+				elseif($field->name == "postal")
+					$customer->postal = $field->value;
+				elseif($field->name == "phone") {
+					$customer->phone = $field->value;
+					$customer->phoneParsed = str_replace($parses, "", $field->value);
+				}
+				elseif($field->name == "cel") {
+					$customer->cel = $field->value;
+					$customer->celParsed = str_replace($parses, "", $field->value);
+				}
+				elseif($field->name == "cel2") {
+					$customer->cel2 = $field->value;
+					$customer->cel2Parsed = str_replace($parses, "", $field->value);
+				}
+				elseif($field->name == "facebook")
+					$customer->facebook = $field->value;
+				elseif($field->name == "twitter")
+					$customer->twitter = $field->value;
+				elseif($field->name == "youtube")
+					$customer->youtube = $field->value;
+				elseif($field->name == "instagram")
+					$customer->instagram = $field->value;
+				elseif($field->name == "linkedin")
+					$customer->linkedin = $field->value;
+				elseif($field->name == "google")
+					$customer->google = $field->value;
+			}
+			return $customer;
+		}
+		
 		function getUsersByGroup($groupName){				
 			$groupId = $this->getIdByGroupName($groupName); // customer id group
 			$users = array();
