@@ -8,7 +8,7 @@
  */
 
 defined('_JEXEC') or die;
-require_once ( JPATH_ROOT.'/async/utils.php' );
+require_once ( JPATH_ROOT.'/api/utils.php' );
 
 if(strpos($module->content, "<?php") !== false)
 {

@@ -56,7 +56,7 @@
 				page++;
 			}
 		};
-		xhttp.open("POST", "/async/article/post.php", true);
+		xhttp.open("POST", "/api/article/post.php", true);
 		xhttp.setRequestHeader("Content-Type", "application/json");
 		xhttp.send(json);
 	};

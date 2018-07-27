@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="module" version="1" client="site" method="upgrade">
+	<name>Slider</name>
+    <author>Programar</author>
+    <version>1.0</version>
+    <description>Renders a Slider of images and video (jpg,png,gif,bmp,mp4)</description>
+	
+	<files>
+		<filename module="mod_program_slider">mod_program_slider.php</filename>		
+		<filename>index.html</filename>
+		<filename>mod_program_slider.xml</filename>		
+		<folder>language</folder>
+		<folder>fields</folder>
+		<folder>tmpl</folder>
+	</files>	
+			
+	<config>
+		<fields name="params" addfieldpath="/modules/mod_program_slider/fields" >
+			<fieldset name="basic">						
+				<field name="directory" type="text" size="160" filter="safehtml" label="Carpeta de imágenes" description="Carpeta donde se encuentran las imágenes. Ejemplo: /images/products. Acepta ista de archivos: Ej. /images/file1.jpg,/images/file2.mp4" />				
+				<field name="titles" type="textarea" rows="5" cols="200" filter="safehtml" default="" label="Titulos" description="Título para la imagen. Ingresar uno por linea." />
+				<field name="descriptions" type="textarea" rows="5" cols="200" filter="safehtml" default="" label="Sub títulos" description="Sub título o descripción para la imagen. Ingresar uno por linea." />
+				<field name="links" type="textarea" rows="5" cols="200" filter="safehtml" default="" label="Links" description="Link para la imagen. Ingresar uno por linea." />				
+				<field name="posters" type="textarea" rows="5" cols="200" filter="safehtml" default="" label="Posters" description="Posters para los videos. Dejar vacio para poster por defecto. Ingresar uno por linea." />				
+				<!--<field type="spacer" name="@ijfnrhaemx" hr="true" />-->
+			</fieldset>
+			<fieldset name="advanced">
+				<!-- Admin Config -->				
+				<field name="templateVideo" type="textarea" filter ="raw" rows="15" cols="200" default="" label="Video html template" description="Template of the video element." />
+				<field name="templateImage" type="textarea" filter ="raw" rows="15" cols="200" default="" label="Image html template" description="Template of the image element." />
+				<field name="templateAssets" type="textarea" filter ="raw" rows="15" cols="200" default="" label="Assets" description="Styles and javascript." />
+			</fieldset>
+		</fields>
+	</config>
+</extension>

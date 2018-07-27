@@ -8,6 +8,7 @@
 	require_once ( JPATH_ROOT .'/libraries/joomla/filesystem/folder.php');
 	require_once ( JPATH_ROOT .'/libraries/vendor/phpmailer/phpmailer/class.phpmailer.php');
 	require_once ( JPATH_ROOT .'/libraries/vendor/phpmailer/phpmailer/class.smtp.php');
+	require_once ( JPATH_ROOT .'/administrator/components/com_fields/helpers/fields.php');
 	
 	class Utils {
 		protected $timer;
@@ -140,34 +141,56 @@
 			$this->logout("site");
 		}
 		
-		/* Get default editor customer */
-		function customerGet($user="Editor", $template=null) {
-			$id = 569;
-			if($user == "Programar")
-				$id = 556;
+		/* Set enterprise data session */
+		function enterpriseSession($user="Editor", $templateId=null, $themeId=null) {
+			if (session_status() == PHP_SESSION_NONE) {
+				session_start();
+			}
+			$customer = $_SESSION["customer"];
+			$enterprise;
+			if($user == "Programar") {
+				$url = strtok($_SERVER["REQUEST_URI"],'?');
+				if(isset($customer) && strpos($url, "plantilla-") === false && $customer->id == 556) {
+					return;				
+				}
+				if(!isset($customer) || (strpos($url, "plantilla-") === false && $customer->id != 556)) {
+					// load regular enterprise
+					$enterprise = $this->enterpriseGet($user, 0, 0);					
+				}
+				else {
+					// enterprise logic for programar					
+					$urls = explode("-", $url);
+					$enterprise = $this->enterpriseGet("Editor", $urls[count($urls)-1], rand (1, 4)); /* get template id from the url */
+				}
+			}
+			else {
+				if(isset($customer))
+					return;
+				// load regular enterprise
+				$enterprise = $this->enterpriseGet($user, $templateId, $themeId);
+			}
+			
+			$_SESSION["customer"] = $enterprise->customer;
+			$_SESSION["template"] = $enterprise->template;
+			$_SESSION["theme"] = $enterprise->theme;			
+		}
+		
+		/* Get enterprise data */
+		function enterpriseGet($user="Editor", $templateId=null, $themeId=null) {
+			$id = $this->userRoleHandler($user);			
 			$user = JFactory::getUser($id);
 			$fields = FieldsHelper::getFields('com_users.user',  $user);
-			$parses = array(' ', '(', ')', '+', '-');
+			$parses = array(' ', '(', ')', '+', '-');			
+						
+			// customer
 			$customer = new stdClass();
+			$customer->id = $id;
 			$customer->email = $user->email;
 			$customer->customername = "";
-			$customer->customernamePrsed = "";
+			$customer->customernameParsed = "";
 			$customer->domain = "";
 			$customer->templateId = "1";
-			$customer->style = "";
-			$customer->font1 = "";
-			$customer->font2 = "";			
-			$customer->fontweight1 = "";
-			$customer->fontweight2 = "";
-			$customer->primarycolor = "";
-			$customer->secondarycolor = "";
-			$customer->color1 = "";
-			$customer->color2 = "";
-			$customer->color3 = "";
-			$customer->color4 = "";
-			$customer->background1 = "";
-			$customer->background2 = "";
-			$customer->background3 = "";
+			$customer->themeId = "1";
 			$customer->description = "";
 			$customer->address = "";
 			$customer->zone = "";
@@ -184,45 +207,25 @@
 			$customer->instagram = "";
 			$customer->linkedin = "";
 			$customer->google  = "";
+			
+			// template
+			$template = new stdClass();			
+			
+			// theme
+			$theme = new stdClass();			
+
 			foreach($fields as $field) {
-				if($field->name == "customername") {
+				// customer
+				if($field->name == "templateid")
+					$customer->templateId = isset($templateId) ? $templateId : $field->value;
+				if($field->name == "themeid")
+					$customer->themeId = isset($themeId) ? $themeId : $field->value;
+				elseif($field->name == "customername") {
 					$customer->customername = $field->value;
 					$customer->customernameParsed = str_replace(' ', '%20', $field->value);
 				}
 				elseif($field->name == "domain")
 					$customer->domain = $field->value;
-				elseif($field->name == "description")
-					$customer->description = $field->value;
-				elseif($field->name == "templateid")
-					$customer->templateId = isset($template) ? $template : $field->value;
-				elseif($field->name == "style-".$customer->templateId)
-					$customer->style = $field->value;
-				elseif($field->name == "font1-".$customer->templateId)
-					$customer->font1 = $field->value;
-				elseif($field->name == "font2-".$customer->templateId)
-					$customer->font2 = $field->value;
-				elseif($field->name == "fontweight1-".$customer->templateId)
-					$customer->fontweight1 = $field->value;
-				elseif($field->name == "fontweight2-".$customer->templateId)
-					$customer->fontweight2 = $field->value;
-				elseif($field->name == "primarycolor-".$customer->templateId)
-					$customer->primarycolor = $field->value;
-				elseif($field->name == "secondarycolor-".$customer->templateId)
-					$customer->secondarycolor = $field->value;
-				elseif($field->name == "color1-".$customer->templateId)
-					$customer->color1 = $field->value;
-				elseif($field->name == "color2-".$customer->templateId)
-					$customer->color2 = $field->value;
-				elseif($field->name == "color3-".$customer->templateId)
-					$customer->color3 = $field->value;
-				elseif($field->name == "color4-".$customer->templateId)
-					$customer->color4 = $field->value;
-				elseif($field->name == "background1-".$customer->templateId)
-					$customer->background1 = $field->value;
-				elseif($field->name == "background2-".$customer->templateId)
-					$customer->background2 = $field->value;
-				elseif($field->name == "background3-".$customer->templateId)
-					$customer->background3 = $field->value;
 				elseif($field->name == "description")
 					$customer->description = $field->value;
 				elseif($field->name == "address")
@@ -255,8 +258,115 @@
 					$customer->linkedin = $field->value;
 				elseif($field->name == "google")
 					$customer->google = $field->value;
+					
+				// template				
+				elseif($field->name == "head".$customer->templateId)
+					$template->head = $field->value;
+				elseif($field->name == "fontfirst".$customer->templateId)
+					$template->fontfirst = $field->value;
+				elseif($field->name == "fontsecond".$customer->templateId)
+					$template->fontsecond = $field->value;
+				elseif($field->name == "weightfirst".$customer->templateId)
+					$template->weightfirst = $field->value;
+				elseif($field->name == "weightsecond".$customer->templateId)
+					$template->weightsecond = $field->value;	
+				
+				// theme				
+				elseif($field->name == "first".$customer->themeId)
+					$theme->first = $field->value;
+				elseif($field->name == "second".$customer->themeId)
+					$theme->second = $field->value;
+				elseif($field->name == "third".$customer->themeId)
+					$theme->third = $field->value;
+				elseif($field->name == "menu".$customer->themeId)
+					$theme->menu = $field->value;
+				elseif($field->name == "bgheader".$customer->themeId)
+					$theme->bgheader = $field->value;
+				elseif($field->name == "bgbody".$customer->themeId)
+					$theme->bgbody = $field->value;
+				elseif($field->name == "bgfooter".$customer->themeId)
+					$theme->bgfooter = $field->value;
+				elseif($field->name == "extra".$customer->themeId) {
+					$theme->extra = $field->value;
+					//break;
+				}
 			}
-			return $customer;
+			$enterprise = new stdClass();
+			$enterprise->customer = $customer;
+			$enterprise->template = $template;
+			$enterprise->theme = $theme;
+			return $enterprise;
+		}	
+		
+		function themeGet($themeId) {
+			JFactory::getApplication("site");
+			$id = $this->userRoleHandler("Editor");
+			$user = JFactory::getUser($id);
+			$fields = FieldsHelper::getFields('com_users.user',  $user);
+			
+			// theme
+			$theme = new stdClass();
+			$theme->first = "";
+			$theme->second = "";
+			$theme->third = "";
+			$theme->menu = "";
+			$theme->bgheader = "";
+			$theme->bgbody = "";
+			$theme->bgfooter = "";
+			$theme->extra = "";
+
+			foreach($fields as $field) {
+				// theme		
+				if($field->name == "first".$themeId)
+					$theme->first = $field->value;
+				elseif($field->name == "second".$themeId)
+					$theme->second = $field->value;
+				elseif($field->name == "third".$themeId)
+					$theme->third = $field->value;
+				elseif($field->name == "menu".$themeId)
+					$theme->menu = $field->value;
+				elseif($field->name == "bgheader".$themeId)
+					$theme->bgheader = $field->value;
+				elseif($field->name == "bgbody".$themeId)
+					$theme->bgbody = $field->value;
+				elseif($field->name == "bgfooter".$themeId) {
+					$theme->bgfooter = $field->value;
+				}
+				elseif($field->name == "extra".$themeId) {
+					$theme->extra = $field->value;
+					//break;
+				}
+			}		
+			$response = array();
+			$response["value"] = $theme;
+			echo json_encode($response);
+			return;
+		}
+		
+		function userRoleHandler($user) {
+			$id = 569; // editor Id
+			if($user == "Programar")
+				$id = 556; 
+			return $id;
+		}
+		
+		function fileGet($directory, $filter="jpg|png|gif|bmp|mp4|webm|ogg") {
+			if(!$directory) return false;
+			$directory = JPath::clean(JPATH_BASE."/$directory");
+			// Not found the directory
+			if(!is_dir($directory)) return false;
+			// Get all files in the directory
+			$files	= JFolder::files($directory, '([^\s]+(\.(?i)('.$filter.'))$)', true, true,
+									 array('index.html', '.svn', 'CVS', '.DS_Store', '__MACOSX', '.htaccess'), array());
+			foreach($files as $key=>$path)
+			{
+				$path = substr($path, strlen(JPATH_BASE) - strlen($path) + 1);
+				$path = JPath::clean($path, "/");
+				$files[$key] = rtrim(JURI::base(true), "/")."/$path";
+			}
+
+			// Get files
+			return $files;			
 		}
 		
 		function getUsersByGroup($groupName){				
@@ -268,6 +378,14 @@
 			return $users;		
 		}
 		
+		function sessionClear() {
+			JFactory::getApplication("site");
+			session_unset();
+			$response = array();
+			$response["value"] = "Session cleared";
+			echo json_encode($response);			
+			return;
+		}
 		function getIdByGroupName($groupName){
 			$db = JFactory::getDBO();
 			$db->setQuery($db->getQuery(true)

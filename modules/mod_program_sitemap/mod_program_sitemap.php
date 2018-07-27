@@ -1,6 +1,6 @@
 <?php
 	define( '_JEXEC', 1 );	
-	require_once ( JPATH_ROOT.'/async/utils.php' );	
+	require_once ( JPATH_ROOT.'/api/utils.php' );	
 		
 	$html = "";	
 	$firstLetter = "";

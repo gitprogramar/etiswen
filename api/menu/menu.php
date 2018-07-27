@@ -3,9 +3,9 @@
 	// Load menu
 	define( '_JEXEC', 1 );
 	define('JPATH_ROOT', realpath(dirname(__FILE__).'/../') );
-	require_once ( JPATH_ROOT .'/async/utils.php');
+	require_once ( JPATH_ROOT .'/api/utils.php');
 	// fields
-	require_once ( JPATH_ROOT .'/async/field/field.php' );
+	require_once ( JPATH_ROOT .'/api/field/field.php' );
 	
 	ini_set('memory_limit', '-1');
 	

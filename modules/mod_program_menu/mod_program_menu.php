@@ -1,6 +1,6 @@
 <?php
 	define( '_JEXEC', 1 );	
-	require_once ( JPATH_ROOT.'/async/utils.php' );	
+	require_once ( JPATH_ROOT.'/api/utils.php' );	
 	
 	
 	$utils = new Utils();
@@ -30,7 +30,7 @@
 	foreach($mainmenu as $menu) {		
 		if($menu->parent_id == 1 && strtolower($menu->note) != 'oculto'){
 			$html .= '<li class="menu-'.$menu->id;
-			if($menu->id == $sitemenu->id) {
+			if($menu->id == $sitemenu->getActive()->id) {
 				$html .= ' active';
 			}
 			$html .= '">';
@@ -39,7 +39,7 @@
 				$menu->title = 'Inicio';
 			}
 			$html .= '<a href="/' . $menu->route . '">' . $menu->title . '</a>';
-			$html .= menuRecursiveChilds($mainmenu, $menu->id, $sitemenu->id, $arraySearch);
+			$html .= menuRecursiveChilds($mainmenu, $menu->id, $sitemenu->getActive()->id, $arraySearch);
 			$html .= '</li>';
 		}		
 	}

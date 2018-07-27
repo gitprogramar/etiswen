@@ -3,9 +3,9 @@
 	// Load Async Custom Html Module to specified position		
 	define( '_JEXEC', 1 );
 	define('JPATH_ROOT', realpath(dirname(__FILE__).'/../') );
-	require_once ( JPATH_ROOT .'/async/utils.php');
+	require_once ( JPATH_ROOT .'/api/utils.php');
 	// include for custom menus
-	require_once ( JPATH_ROOT .'/async/menu/menu.php' );
+	require_once ( JPATH_ROOT .'/api/menu/menu.php' );
 	
 
 	$type = JRequest::getVar('type', '', 'get');

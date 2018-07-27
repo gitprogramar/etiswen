@@ -8,7 +8,7 @@
 	 * group: name of joomla user group (previously created from admin)
 	 * start: index start page ( &start=1&end=31 &start=41&end=61  &start=71&end=91 )
 	 * end: index end page 
-	 * http://programar.com.ar/async/customersearch-ar.php?data=camiones&group=Camiones&start=1&end=41
+	 * http://programar.com.ar/api/customersearch-ar.php?data=camiones&group=Camiones&start=1&end=41
 	 *
 	 * Note: support 1 level of parent-children on user groups
 	 
@@ -34,10 +34,10 @@
 		
 	define( '_JEXEC', 1 );
 	define('JPATH_ROOT', realpath(dirname(__FILE__).'/../') );
-	require_once ( JPATH_ROOT .'/async/utils.php');	
+	require_once ( JPATH_ROOT .'/api/utils.php');	
 	
 	// storage
-	//define('STORAGE', getcwd().'/public_html/async/dataImport.txt');
+	//define('STORAGE', getcwd().'/public_html/api/dataImport.txt');
 	define('STORAGE', getcwd().'/dataImport.txt');
 	define("LB", "<br>");	
 	

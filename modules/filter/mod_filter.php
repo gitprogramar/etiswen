@@ -12,9 +12,9 @@
 	//echo json_decode($params->get("params"), true);
 	*/	
 	define( '_JEXEC', 1 );	
-	require_once ( JPATH_ROOT.'/async/utils.php' );
-	require_once ( JPATH_ROOT.'/async/article/article.php' );
-	require_once ( JPATH_ROOT.'/async/menu/menu.php' );
+	require_once ( JPATH_ROOT.'/api/utils.php' );
+	require_once ( JPATH_ROOT.'/api/article/article.php' );
+	require_once ( JPATH_ROOT.'/api/menu/menu.php' );
 	setlocale(LC_MONETARY, 'es_AR');
 	
 	// filter i.e. //lacosta.xyz?entre=1000-2000

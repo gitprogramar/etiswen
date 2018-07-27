@@ -19,7 +19,7 @@
 			console.log(response);
 		}
 	};
-	xhttp.open("POST", "/async/field/post.php", true);
+	xhttp.open("POST", "/api/field/post.php", true);
 	xhttp.setRequestHeader("Content-Type", "application/json");
 	xhttp.send(json);
 	*/
