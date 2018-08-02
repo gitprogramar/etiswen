@@ -3,21 +3,23 @@
 	 * Monthly cron task. Create sitemap.xml for robots.
 	 */
 	 
-	//php -f /home/u750861504/public_html/cron/schedule_sitemap.php param
+	//php -f /home/u750861504/public_html/cron/schedule_sitemap.php param user subdomain(optional)
 	
 	$utils;
 	try 
 	{
 		define( '_JEXEC', 1 );
 		define('JPATH_ROOT', realpath(dirname(__FILE__).'/../') );
-		require_once ( JPATH_ROOT .'/async/utils.php');			
+		require_once ( JPATH_ROOT .'/api/utils.php');			
+
+		$utils = new Utils();	
+		$user = (string)$argv[2]; 
+		$subdomain = isset($argv[3]) ? "/".(string)$argv[3] : "";
+		$utils->cronStart((string)$argv[1], $subdomain."/sitemap.xml");
 		
-		$utils = new Utils();
-		$utils->cronStart((string)$argv[1], "/sitemap.xml");				
+		dowork($user, $subdomain);
 		
-		dowork();
-		
-		$utils->cronEnd();
+		$utils->cronEnd();		
 	}
 	catch(Exception $ex) {
 		if(isset($utils))
@@ -25,12 +27,16 @@
 		echo $ex->getMessage();
 	}
 	
-	function dowork() {	
-		// domain. NOTE: change protocol as needed.
-		$utils = new Utils();
-		$config = JFactory::getConfig();
-		$url = "http://".$utils->after('@', $config->get('mailfrom'));		
-		
+	function dowork($user, $subdomain) {
+		$utils = new Utils();				
+		// domain	
+		$enterprise = $utils->enterpriseGet($user);	
+		$url = $enterprise->customer->domain;
+
+		echo "User: ".$user.LB;
+		echo "Domain: ".$url.LB;
+		echo "Path: ".STORAGE.LB;
+				
 		// XML
 		$xml = '<?xml version="1.0" encoding="UTF-8"?>';
 		$xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"  xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9  http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">';	
@@ -79,7 +85,9 @@
 		$txt .= "Disallow: /panel/".LB;
 		$txt .= "Disallow: /tmp/".LB;
 		$txt .= "Sitemap: ".$url."/sitemap.xml";
-		file_put_contents(getcwd().'/public_html/robots.txt', $txt);
+		
+		// write robots.txt
+		file_put_contents($utils->before("sitemap",STORAGE)."robots.txt", $txt);
 	}	
 	
 	function lastModified() {

@@ -450,7 +450,7 @@
 		
 		/* Display child links */
 		function childLinks($pageTitle) {
-			$html = '<div class="column-center a-start column-pad"><p>Encontrá toda la información sobre ';
+			$html = '<div class="column-center a-start column-pad"><p>Encontrá todo sobre ';
 			$html .= $pageTitle . ' navegando los siguientes links</p>';
 			$html .= '<div id="showChildPages" class="row-center j-start">';
 			$html .= '<ul style="padding-top:10px;">';

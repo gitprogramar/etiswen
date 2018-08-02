@@ -76,7 +76,7 @@ JHtml::_('behavior.caption');
 			<meta itemprop="width" content="123">
 			<meta itemprop="height" content="123">
 		</span>
-		<div itemprop="publisher" itemtype="http://schema.org/Organization" itemscope="">
+		<div itemprop="publisher" itemtype="https://schema.org/Organization" itemscope="">
 			<div itemprop="logo" itemscope itemtype="https://schema.org/ImageObject">
 			  <img alt="logo" src="<?= $base."images/logo.png" ?>"/>
 			  <meta itemprop="url" content="<?= $doc->base."images/logo.png" ?>">

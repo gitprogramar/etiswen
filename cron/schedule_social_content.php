@@ -10,7 +10,7 @@
 	{
 		define( '_JEXEC', 1 );
 		define('JPATH_ROOT', realpath(dirname(__FILE__).'/../') );
-		require_once ( JPATH_ROOT .'/async/utils.php');			
+		require_once ( JPATH_ROOT .'/api/utils.php');			
 		
 		$utils = new Utils();
 		$utils->cronStart((string)$argv[1], "/cron/social_content_storage_".(string)$argv[2].".txt");
