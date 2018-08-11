@@ -80,15 +80,21 @@ RewriteRule .* index.php [L]
 ## End - Joomla! core SEF Section.
 
 #########################
-# redirect www to no-www
+# redirect www to no-www UNCOMENT/COMMENT according HTTP security
 #########################
+### HTTP ###
+RewriteCond %{HTTP_HOST} ^www\.(.+) [NC]
+RewriteRule ^(.*) http://%1/$1 [R=301,NE,L]
 
-#RewriteEngine On
-#RewriteCond %{HTTP_HOST} ^www\.(.+) [NC]
-#RewriteRule ^(.*) http://%1/$1 [R=301,NE,L]
+### HTTPS ###
+#RewriteCond %{HTTPS} off [OR]
+#RewriteCond %{HTTP_HOST} ^www\. [NC]
+#RewriteCond %{HTTP_HOST} ^(?:www\.)?(.+)$ [NC]
+#RewriteRule ^ https://%1%{REQUEST_URI} [L,NE,R=301]
 
-## Panel
-#RewriteEngine On
+#########################
+# Panel
+#########################
 RewriteCond %{REQUEST_URI} ^/administrator
 RewriteCond %{HTTP_COOKIE} !JoomlaAdminSession=3429020892
 RewriteRule .* - [L,F]
@@ -135,3 +141,4 @@ php_value error_reporting       2039
 <filesMatch ".(css|js)$">
 Header set Cache-Control "max-age=2628000, public"
 </filesMatch>
+

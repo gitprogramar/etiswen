@@ -142,13 +142,13 @@
 		}
 		
 		/* Set enterprise data session */
-		function enterpriseSession($user="Editor", $templateId=null, $themeId=null) {
+		function enterpriseSession($user="manager", $templateId=null, $themeId=null) {
 			if (session_status() == PHP_SESSION_NONE) {
 				session_start();
 			}
 			$customer = $_SESSION["customer"];
 			$enterprise;
-			if($user == "Programar") {
+			if($user == "admin") {
 				$url = strtok($_SERVER["REQUEST_URI"],'?');
 				if(isset($customer) && strpos($url, "plantilla-") === false && $customer->id == 556) {
 					return;				
@@ -160,7 +160,7 @@
 				else {
 					// enterprise logic for programar					
 					$urls = explode("-", $url);
-					$enterprise = $this->enterpriseGet("Editor", $urls[count($urls)-1], rand (1, 4)); /* get template id from the url */
+					$enterprise = $this->enterpriseGet("manager", $urls[count($urls)-1], rand (1, 4)); /* get template id from the url */
 				}
 			}
 			else {
@@ -176,7 +176,7 @@
 		}
 		
 		/* Get enterprise data */
-		function enterpriseGet($user="Editor", $templateId=null, $themeId=null) {
+		function enterpriseGet($user="manager", $templateId=null, $themeId=null) {
 			$id = $this->userRoleHandler($user);			
 			$user = JFactory::getUser($id);
 			$fields = FieldsHelper::getFields('com_users.user',  $user);
@@ -186,6 +186,7 @@
 			$customer = new stdClass();
 			$customer->id = $id;
 			$customer->email = $user->email;
+			$customer->username = $user->username;
 			$customer->customername = "";
 			$customer->customernameParsed = "";
 			$customer->domain = "";
@@ -300,7 +301,7 @@
 		
 		function themeGet($themeId) {
 			JFactory::getApplication("site");
-			$id = $this->userRoleHandler("Editor");
+			$id = $this->userRoleHandler("manager");
 			$user = JFactory::getUser($id);
 			$fields = FieldsHelper::getFields('com_users.user',  $user);
 			
@@ -345,7 +346,7 @@
 		
 		function userRoleHandler($user) {
 			$id = 569; // editor Id
-			if($user == "Programar")
+			if($user == "admin")
 				$id = 556; 
 			return $id;
 		}
@@ -378,14 +379,6 @@
 			return $users;		
 		}
 		
-		function sessionClear() {
-			JFactory::getApplication("site");
-			session_unset();
-			$response = array();
-			$response["value"] = "Session cleared";
-			echo json_encode($response);			
-			return;
-		}
 		function getIdByGroupName($groupName){
 			$db = JFactory::getDBO();
 			$db->setQuery($db->getQuery(true)
@@ -396,6 +389,15 @@
 			);
 			return $db->loadResult();
 		}
+		
+		function sessionClear() {
+			JFactory::getApplication("site");
+			session_unset();
+			$response = array();
+			$response["value"] = "Session cleared";
+			echo json_encode($response);			
+			return;
+		}		
 		
 		function raiseError($ex) {
 			//send 
