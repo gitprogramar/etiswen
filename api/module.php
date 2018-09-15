@@ -1,4 +1,3 @@
-<html><head><meta name="robots" content="noindex, nofollow"></head><body></body></html>
 <?php	
 	// Load Async Custom Html Module to specified position		
 	define( '_JEXEC', 1 );

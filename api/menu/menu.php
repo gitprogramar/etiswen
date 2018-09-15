@@ -1,24 +1,77 @@
-<html><head><meta name="robots" content="noindex, nofollow"></head><body></body></html>
 <?php
 	// Load menu
 	define( '_JEXEC', 1 );
 	define('JPATH_ROOT', realpath(dirname(__FILE__).'/../') );
-	require_once ( JPATH_ROOT .'/api/utils.php');
+	//require_once ( JPATH_ROOT .'/api/utils.php');
 	// fields
 	require_once ( JPATH_ROOT .'/api/field/field.php' );
 	
 	ini_set('memory_limit', '-1');
 	
 	class Menu {
-		protected $utils;
+		protected $language;
+		
 
 		public function __construct() {
-			$this->utils = new Utils();
+			//$this->utils = new Utils();
 		}
 		
-		function get($type = "mainmenu") {
+		function get($type = "mainmenu") {			
 			$menu = JFactory::getApplication('site')->getMenu();
-			return $menu->getItems("menutype", $type);
+			$active = $menu->getActive();
+			$model = new MenuModel();
+			$model->items = $menu->getItems("menutype", $type);
+			$model->activeId = $active->id;
+			$model->activeTitle = $active->title;
+			return $model;
+		}
+		
+		/* Display child links */
+		function childLinks() {			
+			$html = '<div style="padding-top: 0%;">';
+			$html .= '<ul class="column-pad">';
+			$utils = new Utils();
+			$current = $utils->languageGetCurrent($_SESSION["language"]);
+			$lang = $_SESSION["language"];
+			$menuModel = $this->get('mainmenu'.($lang->default != $current ? '-'.$current : ''));
+			
+			foreach($menuModel->items as $menu) {	
+				if ($menu->id == $menuModel->activeId) {
+					$html .= '<li>';
+					if ($menu->home == "1") {
+						$menu->route = "";
+					}
+					$html .= '<div><a href="/' . $menu->route . '">' . $menu->title . '</a></div>';
+					$html .= $this->recursiveChildLinks($menuModel->items, $menu->id);
+					$html .= '</li>';
+				}
+			}
+			return $html .= '</div></div>';
+		}
+		
+		function recursiveChildLinks($items, $parentId) {
+			$hasChilds = false;
+			$html = "";
+						
+			foreach($items as $item) {
+				// get visibility
+				$params = $item->params;
+				$json = json_decode($params);
+				if ($item->parent_id == $parentId && $json->{'menu_show'} != 0) {
+					if (!$hasChilds) {
+						$html .= '<ul class="column-pad">';
+						$hasChilds = true;
+					}
+					$html .= '<li>';
+					$html .= '<div><a href="/' . $item->route . '">' . $item->title . '</a></div>';
+					$html .= $this->recursiveChildLinks($items, $item->id);
+					$html .= '</li>';
+				}
+			}
+			if ($hasChilds) {
+				$html .= '</ul>';
+			}
+			return $html;
 		}
 		
 		function getCustom() {
@@ -231,12 +284,10 @@
 		}
 	}
 	class MenuModel {
-		public $id = 0;
-		public $menutype = "custom";
-		public $title = "";
-		public $route = "";	
-		public $parent_id = 0;
-		public $level = 1;
-		public $note = "";
+		public $items = array();
+		public $activeId = 0;
+		public $activeTitle = "";
+		public $language = "";	
+		public $menutype = "";		
 	}
 ?>

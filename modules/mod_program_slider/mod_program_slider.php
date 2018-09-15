@@ -60,11 +60,11 @@ foreach($files as $file) {
 	$template = str_replace("[title]", $titles[$index], $template);
 	$template = str_replace("[description]", $descriptions[$index], $template);
 	$html .= isset($links[$index]) ? str_replace("[link]", $links[$index], $template) : $template;
-	$dots .= '<span slide-id="'.$index.'"></span>';
+	$dots .= '<span data-id="'.$index.'"></span>';
 	$index++;
 }
 $html .= '</div>'.$dots.'</div></div></div>';
-eval('?>'.$html.$templateAssets.'<?php;');
+eval('?>'.$html.$templateAssets.'<?"php";');
 
 require JModuleHelper::getLayoutPath('mod_program_slider', $params->get('layout', 'default'));
 

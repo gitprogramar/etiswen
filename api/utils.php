@@ -142,56 +142,74 @@
 		}
 		
 		/* Set enterprise data session */
-		function enterpriseSession($user="manager", $templateId=null, $themeId=null) {
+		function enterpriseSession($profile="manager", $templateId=null, $themeId=null) {
 			if (session_status() == PHP_SESSION_NONE) {
 				session_start();
 			}
-			$customer = $_SESSION["customer"];
-			$enterprise;
-			if($user == "admin") {
+			$customer = $_SESSION["customer"];			
+			if($profile == "admin") {
 				$url = strtok($_SERVER["REQUEST_URI"],'?');
-				if(isset($customer) && strpos($url, "plantilla-") === false && $customer->id == 556) {
-					return;				
-				}
-				if(!isset($customer) || (strpos($url, "plantilla-") === false && $customer->id != 556)) {
-					// load regular enterprise
-					$enterprise = $this->enterpriseGet($user, 0, 0);					
+				if(strpos($url, "plantilla-") === false) {
+					if(isset($customer) && $customer->groupId == 8) {
+						$language = $this->languageSetFromURL();
+						if($customer->language == $language->current)
+							return;
+					}					
+					// load enterprise admin
+					$enterprise = $this->enterpriseGet($profile, 0, 0);					
 				}
 				else {
-					// enterprise logic for programar					
+					// enterprise logic manager
 					$urls = explode("-", $url);
-					$enterprise = $this->enterpriseGet("manager", $urls[count($urls)-1], rand (1, 4)); /* get template id from the url */
-				}
+					$enterprise = $this->enterpriseGet($profile, $urls[count($urls)-1], rand (1, 4)); /* get template id from the url */
+				}				
 			}
 			else {
-				if(isset($customer))
-					return;
+				if(isset($customer)) {
+					$language = $this->languageSetFromURL();
+					if($customer->language == $language->current)
+						return;
+				}
 				// load regular enterprise
-				$enterprise = $this->enterpriseGet($user, $templateId, $themeId);
+				$enterprise = $this->enterpriseGet($profile, $templateId, $themeId);
 			}
 			
 			$_SESSION["customer"] = $enterprise->customer;
 			$_SESSION["template"] = $enterprise->template;
-			$_SESSION["theme"] = $enterprise->theme;			
+			$_SESSION["theme"] = $enterprise->theme;
+			$_SESSION["language"] = $enterprise->language;						
 		}
 		
 		/* Get enterprise data */
-		function enterpriseGet($user="manager", $templateId=null, $themeId=null) {
-			$id = $this->userRoleHandler($user);			
-			$user = JFactory::getUser($id);
+		function enterpriseGet($profile="manager", $templateId=null, $themeId=null) {
+			// language
+			$language = new stdClass();
+			$language->default = $this->languageGetDefault();			
+			$language->installed = array();			
+			// installed languages
+			foreach(array_keys(JLanguage::getKnownLanguages()) as $key)
+				$language->installed[] = $this->before('-', $key);
+			// get from url
+			$language->current = $this->languageGetCurrent($language);
+			
+			//$id = $this->userGetByName($profile);			
+			$user = $this->userGetByName($profile.'-'.$language->current);
 			$fields = FieldsHelper::getFields('com_users.user',  $user);
-			$parses = array(' ', '(', ')', '+', '-');			
-						
+			$parses = array(' ', '(', ')', '+', '-');	
+			$json = json_decode($user->params);
 			// customer
 			$customer = new stdClass();
-			$customer->id = $id;
-			$customer->email = $user->email;
+			$customer->id = $user->id;
+			$customer->email = $user->email;			
 			$customer->username = $user->username;
+			$customer->groupId = array_values($user->groups)[0];
+			$customer->language = $this->before('-', $json->{'language'});
 			$customer->customername = "";
 			$customer->customernameParsed = "";
 			$customer->domain = "";
 			$customer->templateId = "1";
 			$customer->themeId = "1";
+			
 			$customer->description = "";
 			$customer->address = "";
 			$customer->zone = "";
@@ -226,7 +244,7 @@
 					$customer->customernameParsed = str_replace(' ', '%20', $field->value);
 				}
 				elseif($field->name == "domain")
-					$customer->domain = $field->value;
+					$customer->domain = $field->value;				
 				elseif($field->name == "description")
 					$customer->description = $field->value;
 				elseif($field->name == "address")
@@ -295,13 +313,14 @@
 			$enterprise = new stdClass();
 			$enterprise->customer = $customer;
 			$enterprise->template = $template;
-			$enterprise->theme = $theme;
+			$enterprise->theme = $theme;			
+			$enterprise->language = $language;
 			return $enterprise;
 		}	
 		
 		function themeGet($themeId) {
 			JFactory::getApplication("site");
-			$id = $this->userRoleHandler("manager");
+			$id = $this->userGetByName("manager");
 			$user = JFactory::getUser($id);
 			$fields = FieldsHelper::getFields('com_users.user',  $user);
 			
@@ -344,16 +363,20 @@
 			return;
 		}
 		
-		function userRoleHandler($user) {
-			$id = 569; // editor Id
-			if($user == "admin")
-				$id = 556; 
-			return $id;
+		function userGetByName($name) {			
+			$db = JFactory::getDBO();
+			$db->setQuery($db->getQuery(true)
+				->select('*')
+				->from("#__users")
+				->where("LOWER(name) = LOWER('".$name."')")
+			);
+			$id = $db->loadResult();
+			return JFactory::getUser($id);
 		}
 		
 		function fileGet($directory, $filter="jpg|png|gif|bmp|mp4|webm|ogg") {
 			if(!$directory) return false;
-			$directory = JPath::clean(JPATH_BASE."/$directory");
+			$directory = JPath::clean(JPATH_ROOT."/$directory");
 			// Not found the directory
 			if(!is_dir($directory)) return false;
 			// Get all files in the directory
@@ -361,7 +384,7 @@
 									 array('index.html', '.svn', 'CVS', '.DS_Store', '__MACOSX', '.htaccess'), array());
 			foreach($files as $key=>$path)
 			{
-				$path = substr($path, strlen(JPATH_BASE) - strlen($path) + 1);
+				$path = substr($path, strlen(JPATH_ROOT) - strlen($path) + 1);
 				$path = JPath::clean($path, "/");
 				$files[$key] = rtrim(JURI::base(true), "/")."/$path";
 			}
@@ -402,7 +425,64 @@
 		function raiseError($ex) {
 			//send 
 			//sendMail($ex->getMessage(), "Error en el sitio web", $to);						
-		}		
+		}				
+		
+		function languageGetDefault() {
+			$doc = JFactory::getDocument();
+			return  $this->before('-', $doc->language);			
+		}
+		
+		function languageGetCurrent($language) {
+			$url = $_SERVER['REQUEST_URI'];
+			foreach($language->installed as $lang) {
+				if($url == '/'.$lang || strpos($url, '/'.$lang.'/') !== false)
+					return $lang;
+			}
+			return $language->default;
+		}
+		
+		function languageSetFromURL() {
+			$language = $_SESSION["language"];
+			$url = $_SERVER['REQUEST_URI'];
+			foreach($language->installed as $lang) {
+				if($url == '/'.$lang || strpos($url, '/'.$lang.'/') !== false) {
+					$language->current = $lang;
+					$_SESSION["language"] = $language;
+					return;
+				}
+			}
+			$language->current = $language->default;
+			$_SESSION["language"] = $language;
+			return $language;
+		}
+		
+		/* bind language combo */
+		function localizationGet() {
+			$language = $_SESSION["language"];
+			$menu = JFactory::getApplication('site')->getMenu();
+			$active = $menu->getActive();			
+			//current
+			$current = JUri::base().($active->home == 1?'':$active->route);
+			$html = '<link rel="alternate" hreflang="'.$language->current.'" href="'.$current.'" />';
+			$default = '';
+			if(strlen(trim($active->note))>0) {
+				$paths = explode(',',$active->note);
+				foreach($language->installed as $lang) {						
+					if($lang == $language->current)
+						continue;
+					foreach($paths as $path) {
+						$alternative = JUri::base().($path=='/'?'':$path);
+						$html .= '<link rel="alternate" hreflang="'.$lang.'" href="'.$alternative.'" />';
+						if(strlen($default) == 0)
+							$default = $alternative;
+					}
+				}
+			}
+			//default
+			$html .= '<link rel="alternate" hreflang="x-default" href="'.($language->current == $language->default ? $current : $default).'" />';
+			
+			echo $html;
+		}
 		
 		// Sort an array by a specific key. Maintains index association
 		/* Usage:
@@ -448,50 +528,6 @@
 			}
 
 			return $new_array;
-		}
-		
-		/* Display child links */
-		function childLinks($pageTitle) {
-			$html = '<div class="column-center a-start column-pad"><p>Encontrá todo sobre ';
-			$html .= $pageTitle . ' navegando los siguientes links</p>';
-			$html .= '<div id="showChildPages" class="row-center j-start">';
-			$html .= '<ul style="padding-top:10px;">';
-			$sitemenu = JFactory::getApplication('site')->getMenu();
-			$mainmenu = $sitemenu->getItems("menutype", "mainmenu");
-				
-			foreach($mainmenu as $menu) {	
-				if ($menu->parent_id == 1 && strtolower($menu->title) == strtolower($pageTitle)) {
-					$html .= '<li>';
-					if ($menu->home == "1") {
-						$menu->route = "";
-					}
-					$html .= '<a href="/' . $menu->route . '">' . $menu->title . '</a>';
-					$html .= $this->recursiveChildLinks($mainmenu, $menu->id);
-					$html .= '</li>';
-				}
-			}
-			return $html .= '</div></div>';
-		}
-		
-		function recursiveChildLinks($items, $parentId) {
-			$hasChilds = false;
-			$html = "";
-			foreach($items as $item) {
-				if ($item->parent_id == $parentId) {
-					if (!$hasChilds) {
-						$html .= '<ul style="padding-top:10px;">';
-						$hasChilds = true;
-					}
-					$html .= '<li>';
-					$html .= '<a href="/' . $item->route . '">' . $item->title . '</a>';
-					$html .= $this->recursiveChildLinks($items, $item->id);
-					$html .= '</li>';
-				}
-			}
-			if ($hasChilds) {
-				$html .= '</ul>';
-			}
-			return $html;
 		}
 		
 		function runTime() {

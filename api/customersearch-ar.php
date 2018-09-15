@@ -1,4 +1,3 @@
-<html><head><meta name="robots" content="noindex, nofollow"></head><body>
 <?php
 	/*
 	 * Customr search task. Searches customer web page and email using Google API tools by brand/category/business etc.

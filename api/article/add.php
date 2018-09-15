@@ -1,4 +1,3 @@
-<html><head><meta name="robots" content="noindex, nofollow"></head><body></body></html>
 <?php	
 	// Article CRUD
 	define( '_JEXEC', 1 );

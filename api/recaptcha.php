@@ -1,4 +1,3 @@
-<html><head><meta name="robots" content="noindex, nofollow"></head><body></body></html>
 <?php	
 		// Recaptcha V2	
 		define( '_JEXEC', 1 );

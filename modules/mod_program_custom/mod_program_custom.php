@@ -12,7 +12,7 @@ require_once ( JPATH_ROOT.'/api/utils.php' );
 
 if(strpos($module->content, "<?php") !== false)
 {
-	eval('?>'.$module->content.'<?php;');
+	eval("?>".$module->content."<?'php';");
 }
 
 require JModuleHelper::getLayoutPath('mod_program_custom', $params->get('layout', 'default'));

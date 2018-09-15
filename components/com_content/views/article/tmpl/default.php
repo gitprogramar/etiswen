@@ -9,6 +9,7 @@
 
 defined('_JEXEC') or die;
 require_once ( JPATH_ROOT .'/api/utils.php');
+require_once ( JPATH_ROOT.'/api/menu/menu.php' );
 
 JHtml::addIncludePath(JPATH_COMPONENT . '/helpers');
 
@@ -49,19 +50,21 @@ JHtml::_('behavior.caption');
 		<div class="clearfix"> </div>
 	<?php endif; ?>
 	
-	<?php // Structured data added 
-		$doc = JFactory::getDocument();
-		$app = JFactory::getApplication();
-		$base = explode('/', $doc->base);
-		$base = $base[0]."//".$base[2]."/";
-		
+	<?php // Structured data added 		
+		$customer = $_SESSION["customer"];	
+		if(!isset($customer)) {
+			$doc = JFactory::getDocument(); 
+			$utils = new Utils();
+			$utils->enterpriseSession($doc->params["sitetitle"]);
+			$customer = $_SESSION["customer"];	
+		}
 	?>
-	<div style="display: none;">
+	<div class="n-display">
 		<span itemprop="author" itemscope itemtype="https://schema.org/Person">
-			<span itemprop="name"><?= $app->get('sitename') ?></span>
+			<span itemprop="name"><?=$customer->customername?></span>
 		</span>
-		<a itemprop="mainEntityOfPage" href="<?= $base ?>">
-			<span itemprop="name"><?= $app->get('sitename') ?></span>
+		<a itemprop="mainEntityOfPage" href="<?=$customer->domain?>">
+			<span itemprop="name"><?=$customer->customername?></span>
 		</a>
 		<meta itemprop="datePublished" content="<?php $date = new DateTime($this->item->created); echo $date->format('Y-m-d'); ?>">	
 		<meta itemprop="dateModified" content="<?php $date = new DateTime($this->item->modified); echo $date->format('Y-m-d'); ?>">			
@@ -71,19 +74,19 @@ JHtml::_('behavior.caption');
 		if(strlen($json->{'image_intro'}) > 0) { ?>
 			<img itemprop="url" src="<?= $json->{'image_intro'} ?>" alt="<?= $json->{'image_intro_alt'} ?>" />
 			<?php } else { ?>
-			<img itemprop="url" src="<?= $base."images/logo.png" ?>" alt="Article Image" />
+			<img itemprop="url" src="<?= $customer->domain."/images/logo.png" ?>" alt="Article Image" />
 		<?php }?>
 			<meta itemprop="width" content="123">
 			<meta itemprop="height" content="123">
 		</span>
 		<div itemprop="publisher" itemtype="https://schema.org/Organization" itemscope="">
 			<div itemprop="logo" itemscope itemtype="https://schema.org/ImageObject">
-			  <img alt="logo" src="<?= $base."images/logo.png" ?>"/>
-			  <meta itemprop="url" content="<?= $doc->base."images/logo.png" ?>">
+			  <img alt="logo" src="<?= $customer->domain."/images/logo.png" ?>"/>
+			  <meta itemprop="url" content="<?= $customer->domain."/images/logo.png" ?>">
 			  <meta itemprop="width" content="60">
 			  <meta itemprop="height" content="60">
 			</div>
-			<span itemprop="name"><?= $app->get('sitename') ?></span>
+			<span itemprop="name"><?=$customer->customername?></span>
 		</div>	
 	</div>
 	
@@ -91,7 +94,7 @@ JHtml::_('behavior.caption');
 	<div class="page-header">
 		<?php if ($params->get('show_title')) : ?>
 			<h1 itemprop="headline">
-				<?php echo $this->escape($this->item->title); ?>
+				<?php echo  ($this->item->category_alias != 'list' ? $this->escape($this->item->title) : $this->escape($this->item->params["page_title"])).'<span class="n-display"> | '.$customer->customername.'</span>'; ?>
 			</h1>
 		<?php endif; ?>
 		<?php if ($this->item->state == 0) : ?>
@@ -149,14 +152,12 @@ JHtml::_('behavior.caption');
 		echo $this->item->toc;
 	endif; ?>
 	<div itemprop="articleBody">
-		<?php 
-			if(strlen(trim($this->item->text)) > 0) {
-				echo $this->item->text;
-			}
-			else {
+		<?php
+			echo $this->item->text;
+			if($this->item->category_alias == 'list') {				
 				/* Display child links for empty pages */
-				$utils = new Utils();
-				echo $utils->childLinks($this->escape($this->item->title));
+				$menu = new Menu();
+				echo $menu->childLinks();
 			}
 		 ?>
 	</div>

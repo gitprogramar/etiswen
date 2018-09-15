@@ -1,4 +1,3 @@
-<html><head><meta name="robots" content="noindex, nofollow"></head><body></body></html>
 <?php
 	define( '_JEXEC', 1 );
 	define('JPATH_ROOT', realpath(dirname(__FILE__).'/../') );

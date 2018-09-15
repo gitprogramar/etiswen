@@ -84,6 +84,7 @@
 		$txt .= "Disallow: /mercadopago/".LB;
 		$txt .= "Disallow: /panel/".LB;
 		$txt .= "Disallow: /tmp/".LB;
+		$txt .= "Disallow: /api/".LB;
 		$txt .= "Sitemap: ".$url."/sitemap.xml";
 		
 		// write robots.txt

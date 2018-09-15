@@ -4,7 +4,7 @@
 		define( '_JEXEC', 1 );
 		define('JPATH_ROOT', realpath(dirname(__FILE__).'/../') );
 		require_once ( JPATH_ROOT .'/api/utils.php');
-
+		JFactory::getApplication("site");
 		/*
 		$type = JRequest::getVar('type', '', 'get');
 		$position = JRequest::getVar('position', '', 'get');
@@ -21,6 +21,38 @@
 			$mainMenu = json_encode($menu->getItems("menutype", "mainmenu"));
 		}
 		*/
+		// currency
+		echo 'HTTP_ACCEPT_LANGUAGE: '.$_SERVER['HTTP_ACCEPT_LANGUAGE'];
+		echo '<br>';
+		
+		
+		$lang = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2);
+		echo 'Lang: '.$lang;
+		echo '<br>';
+		
+		$locale = Locale::acceptFromHttp($_SERVER['HTTP_ACCEPT_LANGUAGE']);
+		echo 'Locale: '.$locale;
+		echo '<br>';
+		
+		$language = Locale::getDisplayLanguage($_SERVER['HTTP_ACCEPT_LANGUAGE']);
+		echo 'Display Language: '.$language;
+		echo '<br>';
+		
+		$currencyPerLocale = array_reduce(
+			\ResourceBundle::getLocales(''),
+			function (array $currencies, string $locale) {
+				$currencies[$locale] = \NumberFormatter::create(
+					$locale,
+					\NumberFormatter::CURRENCY
+				)->getTextAttribute(\NumberFormatter::CURRENCY_CODE);
+
+				return $currencies;
+			},
+			[]
+		);
+		echo 'Currency: ';
+		echo '<br>';
+		var_dump($currencyPerLocale);
 		
 		//server time
 		$info = getdate();
