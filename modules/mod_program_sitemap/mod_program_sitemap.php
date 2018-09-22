@@ -1,21 +1,24 @@
 <?php
 	define( '_JEXEC', 1 );	
-	require_once ( JPATH_ROOT.'/api/utils.php' );	
+	require_once ( JPATH_ROOT.'/api/menu/menu.php' );
 		
 	$html = "";	
 	$firstLetter = "";
 	$letter = "";
-	$sitemenu = JFactory::getApplication('site')->getMenu();
-	$mainmenu = $sitemenu->getItems("menutype", "mainmenu");
+	$utils = new Utils();
+	$langCurrent = $utils->languageGetCurrent($_SESSION["language"]);
+	$langDefault = $utils->languageGetDefault();
+	$menu = new Menu();
+	$menuModel = $menu->get('mainmenu'.($langDefault != $langCurrent ? '-'.$langCurrent : ''));
 	$menuSorted = array();
 	
-	foreach($mainmenu as $menuItem) {
+	foreach($menuModel->items as $menuItem) {
 		$sitemap = new stdClass();
 		$sitemap->title = $menuItem->title;
 		$sitemap->route = $menuItem->route;
 		$menuSorted[] = $sitemap;
 	}
-	$utils = new Utils();
+	
 	$menuSorted = $utils->sortArray($menuSorted, 'title');
 	
 	//var_dump($menuSorted);

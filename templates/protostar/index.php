@@ -155,6 +155,7 @@ select {
     color: var(--first);
     font-size: 1em;
     padding: 7px 7px 7px 12px;
+	background: #fff;
 }
 
 strong {

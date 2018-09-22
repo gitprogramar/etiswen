@@ -209,6 +209,8 @@
 			$customer->domain = "";
 			$customer->templateId = "1";
 			$customer->themeId = "1";
+			$customer->message = "";
+			$customer->subject = "";
 			
 			$customer->description = "";
 			$customer->address = "";
@@ -239,12 +241,16 @@
 					$customer->templateId = isset($templateId) ? $templateId : $field->value;
 				if($field->name == "themeid")
 					$customer->themeId = isset($themeId) ? $themeId : $field->value;
+				elseif($field->name == "default-message")
+					$customer->message = $field->value;
+				elseif($field->name == "default-subject")
+					$customer->subject = $field->value;
 				elseif($field->name == "customername") {
 					$customer->customername = $field->value;
 					$customer->customernameParsed = str_replace(' ', '%20', $field->value);
 				}
 				elseif($field->name == "domain")
-					$customer->domain = $field->value;				
+					$customer->domain = $field->value;
 				elseif($field->name == "description")
 					$customer->description = $field->value;
 				elseif($field->name == "address")
@@ -376,7 +382,7 @@
 		
 		function fileGet($directory, $filter="jpg|png|gif|bmp|mp4|webm|ogg") {
 			if(!$directory) return false;
-			$directory = JPath::clean(JPATH_ROOT."/$directory");
+			$directory = JPath::clean(JPATH_BASE."/$directory");
 			// Not found the directory
 			if(!is_dir($directory)) return false;
 			// Get all files in the directory
@@ -384,7 +390,7 @@
 									 array('index.html', '.svn', 'CVS', '.DS_Store', '__MACOSX', '.htaccess'), array());
 			foreach($files as $key=>$path)
 			{
-				$path = substr($path, strlen(JPATH_ROOT) - strlen($path) + 1);
+				$path = substr($path, strlen(JPATH_BASE) - strlen($path) + 1);
 				$path = JPath::clean($path, "/");
 				$files[$key] = rtrim(JURI::base(true), "/")."/$path";
 			}

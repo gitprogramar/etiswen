@@ -12,6 +12,16 @@
 		return;
 	}
 	
+	/*default*/	
+	$content = array();
+	$content["USD"] = $dolar;
+	$content["CURRENCY"] = "USD";
+	$content["RATE"] = $dolar;
+	if(!isset($to) || strlen($to) == 0 || $to == 'USD') {		
+		echo json_encode($content);
+		return;
+	}
+		
 	$currencyPerLocale = array_reduce(
 		\ResourceBundle::getLocales(''),
 		function (array $currencies, string $locale) {
@@ -27,11 +37,7 @@
 	
 	$locale = Locale::acceptFromHttp($_SERVER['HTTP_ACCEPT_LANGUAGE']);
 	$currency = isset($to) ? $to : $currencyPerLocale[$locale];
-	if(!isset($currency) || strlen($currency) == 0 || $currency == 'USD') {
-		$content = array();
-		$content["USD"] = $dolar;
-		$content["CURRENCY"] = "USD";
-		$content["RATE"] = $dolar;
+	if(!isset($currency) || strlen($currency) == 0 || $currency == 'USD') {		
 		echo json_encode($content);
 		return;
 	}
