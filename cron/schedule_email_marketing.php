@@ -3,7 +3,7 @@
 	 * Daily cron task. Email Marketing: Send articles as emails campaings for 'Social Marketing' category. Based on specific date and user category.
 	 */
 	 
-	//php -f /home/u383829915/public_html/cron/schedule_email_marketing.php param
+	//php -f /home/u510425236/public_html/cron/schedule_email_marketing.php param
 
 	$utils;
 	try 

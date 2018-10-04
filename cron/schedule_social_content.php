@@ -3,7 +3,7 @@
 	 * Daily cron task. Post article content to social networks: facebook, twitter, google plus.
 	 */
 	 
-	//php -f /home/u383829915/public_html/cron/schedule_social_content.php param category_id published client_id client_secret access_token posts_count every_each_day
+	//php -f /home/u510425236/public_html/cron/schedule_social_content.php param category_id published client_id client_secret access_token posts_count every_each_day
 	
 	$utils;
 	try 

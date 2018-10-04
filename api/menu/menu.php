@@ -2,7 +2,7 @@
 	// Load menu
 	define( '_JEXEC', 1 );
 	define('JPATH_ROOT', realpath(dirname(__FILE__).'/../') );
-	//require_once ( JPATH_ROOT .'/api/utils.php');
+	
 	// fields
 	require_once ( JPATH_ROOT .'/api/field/field.php' );
 	
@@ -24,6 +24,29 @@
 			$model->activeId = $active->id;
 			$model->activeTitle = $active->title;
 			return $model;
+		}
+		
+		function getAll() {						
+			$utils = new Utils();
+			$menu = JFactory::getApplication('site')->getMenu();
+			$active = $menu->getActive();			
+			$default = array();
+			$default = $menu->getItems("menutype", "mainmenu");						
+			
+			// installed languages			
+			foreach($utils->languagesGet() as $lang) {
+				$temp = array();
+				$temp = $menu->getItems("menutype", "mainmenu-".$lang);
+				if(isset($temp) && count($temp)>0) {
+					$default = array_merge($default, $temp);
+				}
+			}
+			
+			$model = new MenuModel();
+			$model->items = $default;
+			$model->activeId = $active->id;
+			$model->activeTitle = $active->title;
+			return $model;			
 		}
 		
 		/* Display child links */

@@ -42,6 +42,9 @@
 			else
 				$response["value"] = $menu->get();
 		}		
+		else if($json["action"] == "getAll"){			
+			$response["value"] = $menu->getAll();
+		}
 		echo json_encode($response);
 	}
 	return;

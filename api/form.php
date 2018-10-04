@@ -3,7 +3,7 @@
 		define( '_JEXEC', 1 );
 		define('JPATH_ROOT', realpath(dirname(__FILE__).'/../') );
 		require_once ( JPATH_ROOT .'/api/utils.php');	
-	
+		new Utils();
 		// environment
 		JFactory::getApplication('site');
 	
@@ -79,11 +79,12 @@
 			$returnCode = 0; // captcha validation fail
 		} 
 		else { 
-			$content = "<p><strong>Mensaje: </strong>" . JRequest::getVar('message', '', 'get') . "</p>";
+			$content = "<p>" . JRequest::getVar('message', '', 'get') . "</p>";
 			$content .= "\r\n" . $extraFormData;
 			$config = JFactory::getConfig();
+			$customer = $_SESSION["customer"];
 			$name = JRequest::getVar('name', '', 'get');
-			$subject = "Consulta de " . (strlen($name) > 0 ? $name." - " : "") . $config->get('sitename'); 
+			$subject = (isset($customer) ? $customer->subject.' ' : '') . (strlen($name) > 0 ? $name." - " : "") . $config->get('sitename'); 
 			$utils = new Utils();
 			$utils->sendMail($content, $subject, "", "", JRequest::getVar('email', '', 'get'), $name);
 			// message sent

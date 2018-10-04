@@ -3,14 +3,15 @@
 	 * Monthly cron task. Create sitemap.xml for robots.
 	 */
 	 
-	//php -f /home/u750861504/public_html/cron/schedule_sitemap.php param user subdomain(optional)
+	//php -f /home/u510425236/public_html/cron/schedule_sitemap.php param user subdomain(optional)
 	
 	$utils;
 	try 
 	{
 		define( '_JEXEC', 1 );
 		define('JPATH_ROOT', realpath(dirname(__FILE__).'/../') );
-		require_once ( JPATH_ROOT .'/api/utils.php');			
+		require_once ( JPATH_ROOT .'/api/utils.php');	
+		require_once ( JPATH_ROOT .'/api/menu/menu.php');		
 
 		$utils = new Utils();	
 		$user = (string)$argv[2]; 
@@ -42,20 +43,20 @@
 		$xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"  xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9  http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">';	
 		
 		/* menu */
-		$menu = JFactory::getApplication('site')->getMenu();
-		$mainMenu = $menu->getItems("menutype", "mainmenu");
+		$menu = new Menu();
+		$menuModel = $menu->getAll();
 		
 		$modified = lastModified();
 		
 		// build xml
-		for($x=0; $x < count($mainMenu); $x++) {
+		for($x=0; $x < count($menuModel->items); $x++) {
 			$xml .= '<url>';
-			if(array_values($mainMenu)[$x]->get("home") == 1) {
+			if(array_values($menuModel->items)[$x]->get("home") == 1) {
 				$xml .= '<loc>' . $url . '/' . '</loc>';
 				$xml .= '<priority>' . '1' . '</priority>';	
 			}
 			else {
-				$xml .= '<loc>' . $url . '/'. array_values($mainMenu)[$x]->get("route") . '</loc>';
+				$xml .= '<loc>' . $url . '/'. array_values($menuModel->items)[$x]->get("route") . '</loc>';
 				$xml .= '<priority>' . '0.5' . '</priority>';
 			}
 			//$xml .= '<lastmod>' . $modified . '</lastmod>';

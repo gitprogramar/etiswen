@@ -37,22 +37,7 @@
 		$language = Locale::getDisplayLanguage($_SERVER['HTTP_ACCEPT_LANGUAGE']);
 		echo 'Display Language: '.$language;
 		echo '<br>';
-		
-		$currencyPerLocale = array_reduce(
-			\ResourceBundle::getLocales(''),
-			function (array $currencies, string $locale) {
-				$currencies[$locale] = \NumberFormatter::create(
-					$locale,
-					\NumberFormatter::CURRENCY
-				)->getTextAttribute(\NumberFormatter::CURRENCY_CODE);
-
-				return $currencies;
-			},
-			[]
-		);
-		echo 'Currency: ';
-		echo '<br>';
-		var_dump($currencyPerLocale);
+				
 		
 		//server time
 		$info = getdate();

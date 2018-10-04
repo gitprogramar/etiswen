@@ -3,7 +3,7 @@
 	 * Daily cron task. Check service status of customers and send email notifications when product/service is about to exipire.
 	 */
 	 
-	//php -f /home/u383829915/public_html/cron/plan_renew_daily.php param
+	//php -f /home/u510425236/public_html/cron/plan_renew_daily.php param
 	$utils;
 	try 
 	{

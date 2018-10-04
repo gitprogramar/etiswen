@@ -10,6 +10,9 @@
 	program.post("/api/post.php", {action: "sessionClear"}, function(response) {
 		console.log(response);
 	});
+	program.post("/api/post.php", {action: "serverInfo"}, function(response) {
+		console.log(response);
+	});
 	*/
 	
 	define('_JEXEC', 1);
@@ -25,6 +28,9 @@
 		}
 		if($json["action"] == "sessionClear"){				
 			echo json_encode($utils->sessionClear());
+		}
+		if($json["action"] == "serverInfo"){				
+			echo json_encode($utils->serverInfo());
 		}
 	}
 	return;

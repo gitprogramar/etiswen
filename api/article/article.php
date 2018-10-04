@@ -1,10 +1,10 @@
 <?php
 	define( '_JEXEC', 1 );
-	define('JPATH_ROOT', realpath(dirname(__FILE__).'/../') );
+	define('JPATH_ROOT', realpath(dirname(__FILE__).'/../../') );
 	require_once ( JPATH_ROOT .'/api/utils.php');
 
 	class Article {
-		function get($params){
+		function get($params){			
 			$selects = array();			
 			foreach($params["select"] as $param) {
 				if($param == "total")
@@ -73,9 +73,12 @@
 				$db->setQuery($query);
 			}
 			
-			$items = $db->loadAssocList();
-			if(!in_array("total", $params["select"])){
-				return $items;
+			$items = $db->loadAssocList();			
+			if(!in_array("total", $params["select"])){				
+				$response = array();
+				$response["value"] = $items;
+				echo json_encode($response);
+				return;				
 			}
 			
 			// total items
@@ -85,7 +88,8 @@
 			$model = new ArticleModel();
 			$model->total = $total;
 			$model->items = $items;
-			return $model;
+			echo json_encode($model);
+			return;
 			
 			/*Query*/
 			/*

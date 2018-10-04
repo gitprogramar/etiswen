@@ -1,26 +1,31 @@
 <?php /*********** NO SPACE BEFORE THIS LINE!!!!!!!!!!!!!! *****************/
 	// Utils Library
 	define( '_JEXEC', 1 );
-	define('JPATH_ROOT', realpath(dirname(__FILE__).'/../') );
-	require_once ( JPATH_ROOT .'/includes/defines.php');
-	require_once ( JPATH_ROOT .'/includes/framework.php');
-	require_once ( JPATH_ROOT .'/libraries/joomla/database/factory.php');
-	require_once ( JPATH_ROOT .'/libraries/joomla/filesystem/folder.php');
-	require_once ( JPATH_ROOT .'/libraries/vendor/phpmailer/phpmailer/class.phpmailer.php');
-	require_once ( JPATH_ROOT .'/libraries/vendor/phpmailer/phpmailer/class.smtp.php');
-	require_once ( JPATH_ROOT .'/administrator/components/com_fields/helpers/fields.php');
+	define('JPATH_ROOT', realpath(dirname(__FILE__).'/../') );	
 	
 	class Utils {
 		protected $timer;
 
-		public function __construct() {
-			
+		public function __construct($base=null) {
+			if(isset($base))
+				define('JPATH_BASE', $base);
+			elseif(isset($_SERVER['REQUEST_URI'])) {
+				define('JPATH_BASE', $_SERVER['REQUEST_URI']);				
+			}	
+			require_once ( JPATH_ROOT .'/includes/defines.php');
+			require_once ( JPATH_ROOT .'/includes/framework.php');
+			require_once ( JPATH_ROOT .'/libraries/joomla/database/factory.php');
+			require_once ( JPATH_ROOT .'/libraries/joomla/filesystem/folder.php');
+			require_once ( JPATH_ROOT .'/libraries/vendor/phpmailer/phpmailer/class.phpmailer.php');
+			require_once ( JPATH_ROOT .'/libraries/vendor/phpmailer/phpmailer/class.smtp.php');
+			require_once ( JPATH_ROOT .'/administrator/components/com_fields/helpers/fields.php');	
 		}
 		
 		function sendMail($content, $subject="", $to="", $toName="", $from="", $fromName="", $arraySearch=array(), $arrayReplace=array()) 
 		{
 			// default data
 			$config = JFactory::getConfig();
+			$customer = $_SESSION["customer"];
 			if(!isset($to) || strlen(trim($to)) == 0)
 				$to = $config->get('mailfrom');
 			if(!isset($from) || strlen(trim($from)) == 0)
@@ -28,7 +33,7 @@
 			if(!isset($fromName) || strlen(trim($fromName)) == 0)
 				$fromName = $config->get('fromname');			
 			if(!isset($subject) || strlen(trim($subject)) == 0)
-				$subject = "Mensaje del sitio web ".$config->get('sitename');
+				$subject =  $customer->subject.' - '.$config->get('sitename');
 			// body
 			$html = "<!DOCTYPE html><html lang=\"es\"><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"><meta charset=\"UTF-8\"><meta http-equiv=\"content-type\" content=\"text/html;charset=UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1\"></head><body>" . "\r\n";
 			$html .= str_replace($arraySearch, $arrayReplace, $content) . "\r\n";	
@@ -125,7 +130,7 @@
 			else {
 				// webserver
 				define("LB", "<br>");
-				define('STORAGE', '/home/u383829915/public_html/cron/test_storage.txt');
+				define('STORAGE', '/home/u510425236/public_html/cron/test_storage.txt');
 				// skip robots
 				echo '<html><head><meta name="robots" content="noindex, nofollow"></head><body></body></html>'.LB;
 			}
@@ -183,7 +188,7 @@
 		/* Get enterprise data */
 		function enterpriseGet($profile="manager", $templateId=null, $themeId=null) {
 			// language
-			$language = new stdClass();
+			$language = new stdClass();			
 			$language->default = $this->languageGetDefault();			
 			$language->installed = array();			
 			// installed languages
@@ -191,9 +196,13 @@
 				$language->installed[] = $this->before('-', $key);
 			// get from url
 			$language->current = $this->languageGetCurrent($language);
+			// preferred language
+			$language->browser = substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, 2);
 			
-			//$id = $this->userGetByName($profile);			
-			$user = $this->userGetByName($profile.'-'.$language->current);
+			if(strpos($profile, '-') !== false) // fix user from cron task
+				$user = $this->userGetByName($profile);
+			else 
+				$user = $this->userGetByName($profile.(isset($language->current) ? '-'.$language->current : ''));
 			$fields = FieldsHelper::getFields('com_users.user',  $user);
 			$parses = array(' ', '(', ')', '+', '-');	
 			$json = json_decode($user->params);
@@ -380,6 +389,23 @@
 			return JFactory::getUser($id);
 		}
 		
+		/*Get all installed laguages. 		
+		  Note: used because JLanguage::getKnownLanguages or JLanguageHelper::getKnownLanguages() could
+		  be empty outside the index.php page call.
+		*/
+		function languagesGet() {			
+			$db = JFactory::getDBO();
+			$db->setQuery($db->getQuery(true)
+				->select('lang_code')
+				->from("#__languages")
+			);
+			$installed = array();
+			// installed languages
+			foreach($db->loadColumn() as $lang)
+				$installed[] = $this->before('-', $lang);
+			return $installed;
+		}
+		
 		function fileGet($directory, $filter="jpg|png|gif|bmp|mp4|webm|ogg") {
 			if(!$directory) return false;
 			$directory = JPath::clean(JPATH_BASE."/$directory");
@@ -462,7 +488,7 @@
 			return $language;
 		}
 		
-		/* bind language combo */
+		/* bind language combo and alternate lang link*/
 		function localizationGet() {
 			$language = $_SESSION["language"];
 			$menu = JFactory::getApplication('site')->getMenu();
@@ -488,6 +514,11 @@
 			$html .= '<link rel="alternate" hreflang="x-default" href="'.($language->current == $language->default ? $current : $default).'" />';
 			
 			echo $html;
+		}
+		
+		/*Removes all html tags, javascript and styles elements*/
+		function htmlParse($html) {			
+			return strip_tags(preg_replace('/(<script[^>]*>.+?<\/script>|<style[^>]*>.+?<\/style>)/s', '',  str_replace('><', '> <', $html)));
 		}
 		
 		// Sort an array by a specific key. Maintains index association
