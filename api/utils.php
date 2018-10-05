@@ -220,6 +220,9 @@
 			$customer->themeId = "1";
 			$customer->message = "";
 			$customer->subject = "";
+			$customer->bufferId = "";
+			$customer->bufferToken = "";
+			$customer->bufferSecret = "";
 			
 			$customer->description = "";
 			$customer->address = "";
@@ -260,6 +263,12 @@
 				}
 				elseif($field->name == "domain")
 					$customer->domain = $field->value;
+				elseif($field->name == "buffer-id")
+					$customer->bufferId = $field->value;
+				elseif($field->name == "buffer-token")
+					$customer->bufferToken = $field->value;
+				elseif($field->name == "buffer-secret")
+					$customer->bufferSecret = $field->value;
 				elseif($field->name == "description")
 					$customer->description = $field->value;
 				elseif($field->name == "address")

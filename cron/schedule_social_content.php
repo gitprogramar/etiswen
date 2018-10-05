@@ -3,7 +3,7 @@
 	 * Daily cron task. Post article content to social networks: facebook, twitter, google plus.
 	 */
 	 
-	//php -f /home/u510425236/public_html/cron/schedule_social_content.php param category_id published client_id client_secret access_token posts_count every_each_day
+	//php -f /home/u510425236/public_html/cron/schedule_social_content.php param user category_id published posts_count every_each_day
 	
 	$utils;
 	try 
@@ -13,23 +13,21 @@
 		require_once ( JPATH_ROOT .'/api/utils.php');			
 		
 		$utils = new Utils();
-		$utils->cronStart((string)$argv[1], "/cron/social_content_storage_".(string)$argv[2].".txt");
+		$utils->cronStart((string)$argv[1], "/cron/social_content_storage_".(string)$argv[3].".txt");
 		
 		/* get params */
-		$category_id = (string)$argv[2]; // category_id
-		$published = (string)$argv[3]; // published article?		
-		$client_id = (string)$argv[4]; // client_id	
-		$client_secret = (string)$argv[5]; // client_secret	
-		$access_token = (string)$argv[6]; // access_token
-		$posts_count = (string)$argv[7]; // posts_count
-		$every_each_day = (string)$argv[8]; // every_each_day
-
-		// domain. NOTE: change protocol as needed.
-		$config = JFactory::getConfig();
-		$url = "http://".$utils->after('@', $config->get('mailfrom'));	
+		$user = (string)$argv[2]; // user name
+		$category_id = (string)$argv[3]; // category_id
+		$published = (string)$argv[4]; // published article?				
+		$posts_count = (string)$argv[5]; // posts_count
+		$every_each_day = (string)$argv[6]; // every_each_day
+			
+		// domain	
+		$enterprise = $utils->enterpriseGet($user);	
+		$url = $enterprise->customer->domain;
 		
 		if(checkTaskMustRun($every_each_day)) {
-			dowork($category_id, $published, $client_id, $client_secret, $url, $access_token, $posts_count);	
+			dowork($category_id, $published, $enterprise->customer->bufferId, $enterprise->customer->bufferSecret, $url, $enterprise->customer->bufferToken, $posts_count);	
 		}
 		
 		$utils->cronEnd();
@@ -374,11 +372,9 @@
 	// create storage file if not already exists
 	function createStorage($everyEachDays) {
 		if(file_exists(STORAGE) !== true){ // if file not exists
-			$info = getdate();	
-			$currentDate = date_create($info['year'].'-'.$info['mon'].'-'.$info['mday']); // server date
-			date_sub($currentDate, date_interval_create_from_date_string($everyEachDays.' days'));	// substract N days	
-			$logDate = $currentDate->format('Y-m-d');			
-			file_put_contents(STORAGE, $logDate); // create file with default content
+			$currentDate = JFactory::getDate()->format('Y-m-d');
+			$newdate = strtotime('-'.$everyEachDays.' hour', strtotime($currentDate));
+			file_put_contents(STORAGE, date('Y-m-d', $newdate)); // create file with default content
 		}
 	}	
 	
