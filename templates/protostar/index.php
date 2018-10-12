@@ -10,7 +10,7 @@
    require_once (JPATH_ROOT.'/api/utils.php');
    /*var_dump($this);*/
    $utils = new Utils();
-   $utils->enterpriseSession($this->params["sitetitle"]);
+   $utils->enterpriseSession($this->_metaTags["name"]["rights"]);
    $customer = $_SESSION["customer"];
    $template = $_SESSION["template"];
    $theme = $_SESSION["theme"];

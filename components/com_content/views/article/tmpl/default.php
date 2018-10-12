@@ -52,11 +52,11 @@ JHtml::_('behavior.caption');
 	
 	<?php // Structured data added 		
 		$customer = $_SESSION["customer"];	
-		if(!isset($customer)) {
-			$doc = JFactory::getDocument(); 
+		if(!isset($customer)) {			
+			$doc = JFactory::getDocument(); 						
 			$utils = new Utils();
-			$utils->enterpriseSession($doc->params["sitetitle"]);
-			$customer = $_SESSION["customer"];	
+			$enterprise = $utils->enterpriseGet($doc->_metaTags["name"]["rights"]);
+			$customer = $enterprise->customer;
 		}
 	?>
 	<div class="n-display">
@@ -82,7 +82,7 @@ JHtml::_('behavior.caption');
 		<div itemprop="publisher" itemtype="https://schema.org/Organization" itemscope="">
 			<div itemprop="logo" itemscope itemtype="https://schema.org/ImageObject">
 			  <img alt="logo" src="<?= $customer->domain."/images/logo.png" ?>"/>
-			  <meta itemprop="url" content="<?= $customer->domain."/images/logo.png" ?>">
+			  <meta itemprop="url" content="<?= $customer->domain."/images/logo2.png" ?>">
 			  <meta itemprop="width" content="60">
 			  <meta itemprop="height" content="60">
 			</div>
