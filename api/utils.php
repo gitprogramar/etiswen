@@ -189,11 +189,9 @@
 		function enterpriseGet($profile="manager", $templateId=null, $themeId=null) {
 			// language
 			$language = new stdClass();			
-			$language->default = $this->languageGetDefault();			
-			$language->installed = array();			
-			// installed languages
-			foreach(array_keys(JLanguage::getKnownLanguages()) as $key)
-				$language->installed[] = $this->before('-', $key);
+			$language->default = $this->languageGetDefault();						
+			// installed languages			
+			$language->installed = $this->languagesGet();
 			// get from url
 			$language->current = $this->languageGetCurrent($language);
 			// preferred language
@@ -213,6 +211,8 @@
 			$customer->username = $user->username;
 			$customer->groupId = array_values($user->groups)[0];
 			$customer->language = $this->before('-', $json->{'language'});
+			$menu = JFactory::getApplication('site')->getMenu();			
+			$customer->homemenu = $menu->getDefault();
 			$customer->customername = "";
 			$customer->customernameParsed = "";
 			$customer->domain = "";
@@ -342,6 +342,16 @@
 			return $enterprise;
 		}	
 		
+		function isHomePage() {
+			$customer = $_SESSION["customer"];
+			$homes = array();
+			$homes = explode(',',$customer->homemenu->note);			
+			$url = substr(strtok($_SERVER["REQUEST_URI"],'?'),1);
+			if($url == "" || $url == $customer->homemenu->alias || in_array($url, $homes))
+				return true;
+			return false;
+		}
+		
 		function themeGet($themeId) {
 			JFactory::getApplication("site");
 			$id = $this->userGetByName("manager");
@@ -398,23 +408,6 @@
 			return JFactory::getUser($id);
 		}
 		
-		/*Get all installed laguages. 		
-		  Note: used because JLanguage::getKnownLanguages or JLanguageHelper::getKnownLanguages() could
-		  be empty outside the index.php page call.
-		*/
-		function languagesGet() {			
-			$db = JFactory::getDBO();
-			$db->setQuery($db->getQuery(true)
-				->select('lang_code')
-				->from("#__languages")
-			);
-			$installed = array();
-			// installed languages
-			foreach($db->loadColumn() as $lang)
-				$installed[] = $this->before('-', $lang);
-			return $installed;
-		}
-		
 		function fileGet($directory, $filter="jpg|png|gif|bmp|mp4|webm|ogg") {
 			if(!$directory) return false;
 			$directory = JPath::clean(JPATH_BASE."/$directory");
@@ -468,13 +461,30 @@
 			//sendMail($ex->getMessage(), "Error en el sitio web", $to);						
 		}				
 		
+		/*Get all installed laguages. 		
+		  Note: used because JLanguage::getKnownLanguages or JLanguageHelper::getKnownLanguages() could
+		  be empty outside the index.php page call.
+		*/
+		function languagesGet() {			
+			$db = JFactory::getDBO();
+			$db->setQuery($db->getQuery(true)
+				->select('lang_code')
+				->from("#__languages")
+			);
+			$installed = array();
+			// installed languages
+			foreach($db->loadColumn() as $lang)
+				$installed[] = $this->before('-', $lang);
+			return $installed;
+		}
+		
 		function languageGetDefault() {
 			$doc = JFactory::getDocument();
 			return  $this->before('-', $doc->language);			
 		}
 		
 		function languageGetCurrent($language) {
-			$url = $_SERVER['REQUEST_URI'];
+			$url = $_SERVER['REQUEST_URI'];			
 			foreach($language->installed as $lang) {
 				if($url == '/'.$lang || strpos($url, '/'.$lang.'/') !== false)
 					return $lang;

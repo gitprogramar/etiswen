@@ -24,8 +24,8 @@
 				$html .= ' active';
 			}
 			$html .= '">';
-			if($menu->home == 1)
-				$menu->route = '';			
+			/*if($menu->home == 1)
+				$menu->route = '';*/			
 			
 			$html .= '<a href="/' . $menu->route . '">' . $menu->title . '</a>';			
 			if($homeId != 0)

@@ -53,9 +53,16 @@
 		function childLinks() {			
 			$html = '<div style="padding-top: 0%;">';
 			$html .= '<ul class="column-pad">';
+			
+			$lang = $_SESSION["language"];	
+			if(!isset($lang)) {			
+				$doc = JFactory::getDocument(); 						
+				$utils = new Utils();
+				$enterprise = $utils->enterpriseGet($doc->_metaTags["name"]["rights"]);
+				$lang = $enterprise->language;
+			}
 			$utils = new Utils();
-			$current = $utils->languageGetCurrent($_SESSION["language"]);
-			$lang = $_SESSION["language"];
+			$current = $utils->languageGetCurrent($lang);			
 			$menuModel = $this->get('mainmenu'.($lang->default != $current ? '-'.$current : ''));
 			
 			foreach($menuModel->items as $menu) {	
