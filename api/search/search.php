@@ -13,7 +13,16 @@
 		}
 		
 		function get($params){
-			
+			// words to search for
+			$filters = explode(' ',$params["filter"]);
+			$words = array();
+			foreach($filters as $filter) {
+				$formatted = preg_replace('/\s+/', '', $filter);
+				if(strlen($formatted) == 0)
+					continue;
+				$words[] = $filter;
+			}
+			/*Article query*/
 			$selects = array();			
 			foreach($params["select"] as $param) {
 				if($param == "total")
@@ -40,9 +49,13 @@
 			// where
 			$where = "content.catid NOT IN (SELECT id FROM #__categories WHERE LOWER(title) = LOWER('No Search') OR LOWER(title) = LOWER('No Buscar'))";
 			$where .= " AND content.state = 1";
-			$where .= " AND content.introtext NOT LIKE '{loadposition%'";
-			$where .= " AND menu.path IS NOT NULL";			
-			$where .= " AND (content.language = '*' OR content.language LIKE '".$this->language->current."-%')";
+			$where .= " AND content.introtext NOT LIKE '%loadposition%'";
+			$where .= " AND menu.path IS NOT NULL";
+			$where .= " AND menu.published = 1"; 			
+			$where .= " AND (content.language = '*' OR content.language LIKE '".$this->language->current."-%')";			
+			foreach($words as $word) {				
+				$where .= " AND (LOWER(introtext) LIKE LOWER('%".$word."%') OR LOWER(content.title) LIKE LOWER('%".$word."%'))";
+			}	
 			if(isset($params["whereClause"])) {
 				$where .= " ".$params["whereClause"];
 			}
@@ -50,7 +63,7 @@
 			$query->where($where);
 			$query->group('content.id');
 			// order 
-			if(!isset($params["order"])) {
+			/*if(!isset($params["order"])) {
 				$query->order('content.created');			
 			}
 			elseif($params["order"] == "popular") {
@@ -58,6 +71,45 @@
 			}
 			else {
 				$query->order($params["order"] . ", content.created");
+			}*/
+			
+			/*Cart query*/
+			if(isset($params["cart"]) && $params["cart"]) {
+				$selects = array();			
+				foreach($params["select"] as $param) {				
+					if($param == "id" || $param == "total")
+						$selects[] = "cart.id as id";
+					else if($param == "title")
+						$selects[] = "cart.name as title";
+					else if($param == "introtext")
+						$selects[] = "cart.description as introtext";
+					else if($param == "created")
+						$selects[] = "cart.checked_out_time as created";
+					else if($param == "route")
+						$selects[] = "CONCAT(menu.path,'?filter=',cart.id) as route";
+				}	
+				$query2  = $db->getQuery(true);
+				// select
+				$query2->select($selects);
+				// join
+				$query2->from("#__rokquickcart cart");
+				$query2->join("LEFT", "#__menu menu ON LOWER(REPLACE(menu.alias, '-', ' ')) = LOWER(SUBSTRING_INDEX(SUBSTRING_INDEX(cart.params, '{\"', -1), '\":',1)) ");
+				// where
+				/*$where .= " (content.language = '*' OR content.language LIKE '".$this->language->current."-%')";*/
+				$where = "cart.published = 1"; 
+				$where .= " AND menu.published = 1"; 
+				$where .= " AND menu.path IS NOT NULL";			
+				foreach($words as $word) {				
+					$where .= " AND (LOWER(cart.name) LIKE LOWER('%".$word."%') OR LOWER(cart.description) LIKE LOWER('%".$word."%'))";
+				}
+				
+				if(isset($params["whereClause"])) {
+					$where .= " ".$params["whereClause"];
+				}			
+				$query2->where($where);
+				
+				// union
+				$query->unionAll($query2);
 			}
 			/*
 			$response = array();
@@ -101,6 +153,7 @@
 			$model->total = $total;
 			$model->page = $params["paging"]["page"];
 			$model->items = $itemsParsed;
+			$model->words = $words;
 			return $model;
 			
 		}
@@ -109,19 +162,26 @@
 		public $total = 0;
 		public $page = 0;
 		public $items = array();
+		public $words = array();
 	}
 	
 	/*QUERY*/
 	/*
-	SELECT content.id as id,content.title as title, menu.path
-	FROM `nub_content` content
-	LEFT JOIN `nub_content_frontpage` frontpage ON content.id = frontpage.content_id
-	LEFT JOIN `nub_menu` menu ON content.alias = menu.alias
-	WHERE catid NOT IN (SELECT id FROM `nub_categories` WHERE LOWER(title) = LOWER('No Search') OR LOWER(title) = LOWER('No Buscar')) 
-	AND content.state = 1 
-	AND (content.language = '*' OR content.language LIKE 'en-%')
-	AND menu.path IS NOT NULL
+	SELECT SQL_CALC_FOUND_ROWS content.id as id,content.title as title,content.introtext as introtext,menu.path as route
+	FROM `prog_content` content
+	LEFT JOIN `prog_content_frontpage` frontpage ON content.id = frontpage.content_id
+	LEFT JOIN `prog_menu` menu ON content.alias = menu.alias
+	WHERE content.catid NOT IN (SELECT id FROM `prog_categories` WHERE LOWER(title) = LOWER('No Search') OR LOWER(title) = LOWER('No Buscar')) AND content.state = 1 AND content.introtext NOT LIKE '%loadposition%' AND menu.path IS NOT NULL AND menu.published = 1 AND (LOWER(introtext) LIKE LOWER('%manual%') OR LOWER(content.title) LIKE LOWER('%manual%')) AND (LOWER(introtext) LIKE LOWER('%joy%') OR LOWER(content.title) LIKE LOWER('%joy%'))
 	GROUP BY content.id
-	ORDER BY frontpage.ordering DESC, content.created
+	UNION ALL (
+	SELECT cart.id as id,cart.name as title,cart.description as introtext,CONCAT(menu.path,'?filter=',cart.id) as route
+	FROM `prog_rokquickcart` cart
+	LEFT JOIN `prog_menu` menu ON LOWER(REPLACE(menu.alias, '-', ' ')) = LOWER(SUBSTRING_INDEX(SUBSTRING_INDEX(cart.params, '{"', -1), '":',1)) 
+	WHERE cart.published = 1 AND menu.published = 1 
+	AND menu.path IS NOT NULL 
+	AND (LOWER(cart.name) LIKE LOWER('%manual%') OR LOWER(cart.description) LIKE LOWER('%manual%')) 
+	AND (LOWER(cart.name) LIKE LOWER('%joy%') OR LOWER(cart.description) LIKE LOWER('%joy%')))
+
+	LIMIT 10, 5
 	*/
 ?>

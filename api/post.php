@@ -32,6 +32,9 @@
 		if($json["action"] == "serverInfo"){				
 			echo json_encode($utils->serverInfo());
 		}
+		if($json["action"] == "fileGetPaged" && isset($json["directory"])){				
+			echo json_encode($utils->fileGetPaged($json["page"], $json["size"], $json["directory"]));
+		}
 	}
 	return;
 ?>

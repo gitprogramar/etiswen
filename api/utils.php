@@ -15,7 +15,7 @@
 			require_once ( JPATH_ROOT .'/includes/defines.php');
 			require_once ( JPATH_ROOT .'/includes/framework.php');
 			require_once ( JPATH_ROOT .'/libraries/joomla/database/factory.php');
-			require_once ( JPATH_ROOT .'/libraries/joomla/filesystem/folder.php');
+			require_once ( JPATH_ROOT .'/libraries/vendor/joomla/filesystem/src/Folder.php');
 			require_once ( JPATH_ROOT .'/libraries/vendor/phpmailer/phpmailer/class.phpmailer.php');
 			require_once ( JPATH_ROOT .'/libraries/vendor/phpmailer/phpmailer/class.smtp.php');
 			require_once ( JPATH_ROOT .'/administrator/components/com_fields/helpers/fields.php');	
@@ -408,7 +408,7 @@
 			return JFactory::getUser($id);
 		}
 		
-		function fileGet($directory, $filter="jpg|png|gif|bmp|mp4|webm|ogg") {
+		function fileGet($directory, $filter="jpg|png|gif|bmp|mp4|webm|ogg") {			
 			if(!$directory) return false;
 			$directory = JPath::clean(JPATH_BASE."/$directory");
 			// Not found the directory
@@ -425,6 +425,40 @@
 
 			// Get files
 			return $files;			
+		}
+		
+		function fileGetPaged($page, $size, $directory, $filter="jpg|png|gif|bmp|mp4|webm|ogg") {
+			JFactory::getApplication("site");			
+			$realpath = JPath::clean($this->before_last('/',getcwd())."/$directory");						
+			// Not found the path
+			if(!is_dir($realpath)) return false;
+			// Get all files in the realpath
+			$files	= JFolder::files($realpath, '([^\s]+(\.(?i)('.$filter.'))$)', true, true,
+									 array('index.html', '.svn', 'CVS', '.DS_Store', '__MACOSX', '.htaccess'), array());
+			$total = count($files);
+			$totalPages = ceil($total/$size);
+			$pagedFiles = array();
+			$counter = 0;
+			$pageCounter = 1;
+			foreach($files as $key=>$name)
+			{
+				$pagedFiles[] = $this->after_last('/',$name); 
+				$counter++;				
+				if($size == $counter) {
+					if($page == $pageCounter) {
+						break;
+					}
+					$pageCounter++;
+					$counter = 0;
+					$pagedFiles = [];
+				}
+			}
+			$response = array();
+			$response["files"] = $pagedFiles;
+			$response["total"] = $total;
+			$response["pages"] = $pageCounter;
+			echo json_encode($response);
+			return;
 		}
 		
 		function getUsersByGroup($groupName){				

@@ -4,7 +4,7 @@
 		define( '_JEXEC', 1 );
 		define('JPATH_ROOT', realpath(dirname(__FILE__).'/../') );
 		require_once ( JPATH_ROOT .'/api/utils.php');
-		JFactory::getApplication("site");
+		//JFactory::getApplication("site");
 		/*
 		$type = JRequest::getVar('type', '', 'get');
 		$position = JRequest::getVar('position', '', 'get');
@@ -22,7 +22,7 @@
 		}
 		*/
 		// currency
-		echo 'HTTP_ACCEPT_LANGUAGE: '.$_SERVER['HTTP_ACCEPT_LANGUAGE'];
+		/*echo 'HTTP_ACCEPT_LANGUAGE: '.$_SERVER['HTTP_ACCEPT_LANGUAGE'];
 		echo '<br>';
 		
 		
@@ -37,7 +37,7 @@
 		$language = Locale::getDisplayLanguage($_SERVER['HTTP_ACCEPT_LANGUAGE']);
 		echo 'Display Language: '.$language;
 		echo '<br>';
-				
+			*/	
 		
 		//server time
 		$info = getdate();
