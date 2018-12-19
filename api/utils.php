@@ -456,7 +456,8 @@
 			$response = array();
 			$response["files"] = $pagedFiles;
 			$response["total"] = $total;
-			$response["pages"] = $pageCounter;
+			$response["page"] = $pageCounter;
+			$response["pages"] = $totalPages;
 			echo json_encode($response);
 			return;
 		}

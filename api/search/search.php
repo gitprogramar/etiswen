@@ -93,7 +93,7 @@
 				$query2->select($selects);
 				// join
 				$query2->from("#__rokquickcart cart");
-				$query2->join("LEFT", "#__menu menu ON LOWER(REPLACE(menu.alias, '-', ' ')) = LOWER(SUBSTRING_INDEX(SUBSTRING_INDEX(cart.params, '{\"', -1), '\":',1)) ");
+				$query2->join("LEFT", "#__menu menu ON LOWER(REPLACE(menu.alias, '-', ' ')) = LOWER(REPLACE(REPLACE(SUBSTRING_INDEX(SUBSTRING_INDEX(cart.params, '{\"', -1), '\":',1), '\/', ' '), '\\\', '')) ");
 				// where
 				/*$where .= " (content.language = '*' OR content.language LIKE '".$this->language->current."-%')";*/
 				$where = "cart.published = 1"; 

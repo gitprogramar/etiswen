@@ -43,7 +43,7 @@
 	}
 	
 	// get current rate from http://themoneyconverter.com
-	$page_text = file_get_contents("http://themoneyconverter.com/CurrencyConverter.aspx?tab=0&dccy1=USD&dccy2=".$currency);
+	$page_text = file_get_contents("https://themoneyconverter.com/CurrencyConverter.aspx?tab=0&dccy1=USD&dccy2=".$currency);
 	$dom = new DOMDocument;
 	libxml_use_internal_errors(true);
 	$dom->loadHTML($page_text);
