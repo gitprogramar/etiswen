@@ -2,6 +2,7 @@
 	define( '_JEXEC', 1 );
 	define('JPATH_ROOT', realpath(dirname(__FILE__).'/../../') );
 	require_once ( JPATH_ROOT .'/api/utils.php');
+	new Utils();
 
 	class Article {
 		function get($params){			
@@ -108,6 +109,110 @@
 				ORDER BY precio DESC, frontpage.ordering DESC, content.created
 				LIMIT 0, 20
 			*/
+		}
+		
+		function insert($params) {
+			$utils = new Utils();
+			$db = JFactory::getDBO();		
+			$values = array();
+			// avoid repeating alias
+			$aliasNumber = 0;
+			$ordering = 0;
+			// handle multiple insert at once
+			foreach($params['articles'] as $item) {
+				$name = array_values($item)[0];
+				$alias = $this->generateAlias(array_values($item)[0], $aliasNumber);	
+				if(strpos($alias, '-') !== false) {
+					$aliasNumber = $utils->after_last('-',$alias);
+					$name = $name.' '.$aliasNumber;
+				}
+				// handles ordering
+				if($ordering == 0) {
+					$ordering = (int)$this->ordering(array_values($item)[2]);					
+				}
+				$ordering++;
+				$array = array($db->quote($name), 
+								$db->quote($alias), 
+								$db->quote(array_values($item)[1]), 
+								array_values($item)[2], 
+								$db->quote(JFactory::getDate()->toSQL()), 
+								$db->quote('Super User'),
+								1,
+								$ordering,
+								1,
+								$db->quote('{"page_title":"","author":"","robots":""}'),
+								$db->quote('*')
+								);
+				$values[] = implode(',', $array);
+				$aliasNumber++;
+			}
+			// columns to insert.
+			$columns = array('title', 
+							 'alias', 
+							 'introtext', 
+							 'catid', 
+							 'created', 
+							 'created_by_alias', 
+							 'state', 
+							 'ordering',
+							 'access', 
+							 'metadata', 
+							 'language');
+
+			$query  = $db->getQuery(true);		
+			// insert data
+			$query->insert($db->quoteName('#__content'));
+			$query->columns($db->quoteName($columns));
+			$query->values($values);
+			$db->setQuery($query);
+			/*
+			$response = array();
+			$response["value"] = ($query->__toString());
+			echo json_encode($response);
+			return;	
+			*/
+			$rows = $db->execute();	
+			$response = array();
+			$response["value"] = count($params['articles']) . ' rows inserted on data base!';
+			echo json_encode($response);
+			return;				
+		}
+		
+		function generateAlias($alias, $num) {
+			$newAlias;
+			$alias = JFilterOutput::stringURLSafe(strtolower($alias));
+			if($num == 0) {
+				$newAlias = $alias;
+			}
+			else {
+				$newAlias = $alias."-".$num;
+			}
+			$db = JFactory::getDBO();		
+			
+			// get content
+			$query  = $db->getQuery(true);
+			$query->select('alias');
+			$query->from('#__content');
+			$query->where("LOWER(alias) = '".$newAlias."'"); 
+			$db->setQuery($query);
+			$data = $db->loadRowList();
+			// if data do not exists
+			if(count($data) == 0){
+				return $newAlias;
+			}
+			$num++;
+			return $this->generateAlias($alias, $num);			
+		}
+		
+		function ordering($catId) {
+			$db = JFactory::getDBO();
+			$query  = $db->getQuery(true);
+			$query->select('MAX(ordering)');
+			$query->from('#__content');
+			$query->where("catid = ".$catId); 
+			$db->setQuery($query);
+			$data = $db->loadResult();
+			return $data;
 		}
 	}
 	class ArticleModel {

@@ -87,15 +87,20 @@
 	// parse json
 	$json = json_decode(file_get_contents('php://input'), true);
 	
+	/*
 	if(!isset($json["select"])) {
 		echo "select clause missing";
 		return;
 	}
+	*/
 	
 	if(isset($json) && isset($json["action"])) {
 		$item = new Article();
 		if($json["action"] == "get"){				
 			echo json_encode($item->get($json));
+		}
+		if($json["action"] == "insert"){				
+			echo json_encode($item->insert($json));
 		}
 	}
 	return;

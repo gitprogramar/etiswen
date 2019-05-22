@@ -3,31 +3,44 @@
 	 * Daily cron task. Post article content to social networks: facebook, twitter, google plus.
 	 */
 	 
-	//php -f /home/u510425236/public_html/cron/schedule_social_content.php param user category_id published posts_count every_each_day
-	
+	//php -f /home/u510425236/public_html/cron/schedule_social_content.php param user categoryPostId categoryAdvertiseId totalPosts advertiseEvery runsEveryEachDay ordered
+	//php -f /home/u510425236/public_html/cron/schedule_social_content.php param admin-es 8 49 2 10 0 1
 	$utils;
+	class CronModel {
+		public function __construct($data) {			
+		    // properties from params
+			$this->param = (string)$data[1];
+			$this->userName = (string)$data[2];			
+			$this->categoryPostId = (string)$data[3]; // category_id for posts
+			$this->categoryAdvertiseId = (string)$data[4]; // category_id for advertising
+			$this->totalPosts = (string)$data[5]; // total posts sent to buffer
+			$this->advertiseEvery = (string)$data[6]; // insert advertise after how many posts
+			$this->runsEveryEachDay = (string)$data[7]; // task run every these days
+			$this->ordered = (string)$data[8]; // ordered or random			
+			// storage
+			if(substr(php_sapi_name(), 0, 3) == 'cli' || empty($_SERVER['REMOTE_ADDR'])) {
+				$this->storage = "/cron/social_content_storage_".$this->categoryPostId.".txt";
+			}
+			else {			
+				$this->storage = "/home/".(string)$data[0]."/public_html/cron/test_storage.txt";
+			}			
+		}		
+	}
 	try 
 	{
 		define( '_JEXEC', 1 );
 		define('JPATH_ROOT', realpath(dirname(__FILE__).'/../') );
 		require_once ( JPATH_ROOT .'/api/utils.php');			
+				
+		//$argv = array("u510425236", "", "admin-es", "8", "49", "1", "2", "0", "1");		
+		$cronModel = new CronModel($argv);
 		
-		$utils = new Utils();
-		$utils->cronStart((string)$argv[1], "/cron/social_content_storage_".(string)$argv[3].".txt");
+		$utils = new Utils();		
+		$utils->cronStart($cronModel->param, $cronModel->storage);				
 		
-		/* get params */
-		$user = (string)$argv[2]; // user name
-		$category_id = (string)$argv[3]; // category_id
-		$published = (string)$argv[4]; // published article?				
-		$posts_count = (string)$argv[5]; // posts_count
-		$every_each_day = (string)$argv[6]; // every_each_day
-			
-		// domain	
-		$enterprise = $utils->enterpriseGet($user);	
-		$url = $enterprise->customer->domain;
-		
-		if(checkTaskMustRun($every_each_day)) {
-			dowork($category_id, $published, $enterprise->customer->bufferId, $enterprise->customer->bufferSecret, $url, $enterprise->customer->bufferToken, $posts_count);	
+		if(checkTaskMustRun($cronModel->runsEveryEachDay)) {			
+			$enterprise = $utils->enterpriseGet($cronModel->userName);	
+			dowork($cronModel, $enterprise);
 		}
 		
 		$utils->cronEnd();
@@ -36,131 +49,186 @@
 		if(isset($utils))
 			$utils->raiseError($ex);
 		echo $ex->getMessage();
-	}
+	}	
 	
 	// logic to start processing the posts
-	function dowork($category_id, $published, $client_id, $client_secret, $callback_url, $access_token, $posts_count)
+	function dowork($cronModel, $enterprise)
 	{	
-		// try access buffer API
-		$buffer = new BufferApp($client_id, $client_secret, $callback_url, $access_token); //var_dump($buffer);
+		$host = $enterprise->customer->domain;
+		
+		// access buffer API
+		$buffer = new BufferApp($enterprise->customer->bufferId, $enterprise->customer->bufferSecret, $host, $enterprise->customer->bufferToken); //var_dump($buffer);
 		$profiles = array();
 		if (!$buffer->ok) {
 			echo 'Can not connect to Buffer!';
 			var_dump($buffer);
 			return false;
-		} else {
-			$profiles = $buffer->go('/profiles');				
-			if (!is_array($profiles) || count($profiles) == 0) {
-				echo "No profiles available. Please checkout in https://buffer.com/app/profile/";
-				return false;
+		} 
+		$profiles = $buffer->go('/profiles');				
+		if (!is_array($profiles) || count($profiles) == 0) {
+			echo "No profiles available. Please checkout in https://buffer.com/app/profile/";
+			return false;
+		}
+		echo 'Successfully connected to Buffer'.LB.LB;
+		
+		// clean list: delete previous posts		
+		echo 'Deleting previous posts....'.LB;		
+		foreach ($profiles as $profile) {			
+			echo 'Profile '.$profile->service.':';
+			$result = $buffer->go('/profiles/'.$profile->id.'/updates/pending');			
+			$deleteCounter = 0;			
+			foreach($result->updates as $update) {				
+				$options = array();
+				$options["id"] = $update->id;
+				$deleted = $buffer->go('/updates/'.$update->id.'/destroy');
+				if(!isset($deleted) || !$deleted) {
+					echo LB.'Could not delete post id: '.$update->id;
+				}
+				else {
+					$deleteCounter++;
+				}
 			}
+			echo LB.$deleteCounter.' post deleted.'.LB.LB;
 		}	
-	
-		$db     = JFactory::getDBO();
-		jimport( 'joomla.access.access' );
 		
-		// get article content
-		$query  = $db->getQuery(true);
-		$query->select('id, introtext');
-		$query->from('#__content');		
-		$query->where('catid = '.$category_id); // social Category ID
-		$query->where('state = '.$published); // published/not published articles		
-		
-		$db->setQuery($query);
-		$articles = $db->loadRowList();
-		
-		// return if no articles found
-		if(count($articles) == 0){
-			echo 'No articles found for Social category Id = '.$category_id;
-			return;
-		}
-					
-		//filter articles randomly
-		$quantity = intval($posts_count);
-		if(count($articles) < intval($posts_count)){
-			$quantity = count($articles);
-		}
-		$randomArticles = array_random_assoc($articles, $quantity);
-		
-		// get postImage from /images/social_logo
-		$socialLogos = array();
-		/*
-		$directory	= JPath::clean( JPATH_BASE . "/images/social_logo" );
-		// directory exists
-		if(is_dir($directory)){
-			$filter		= '([^\s]+(\.(?i)(jpg|png|gif|bmp))$)';
-			$exclude	= array('index.html', '.svn', 'CVS', '.DS_Store', '__MACOSX', '.htaccess');
-			$excludefilter = array();			
-			// Get all images in the directory
-			$files	= JFolder::files($directory, $filter, true, true, $exclude, $excludefilter);
-			foreach($files as $key=>$path)
-			{
-				$path = substr($path, strlen(JPATH_BASE) - strlen($path) + 1);
-				$path = JPath::clean( $path, "/" );
-				$files[$key] = $callback_url."/$path";
-			}			
-			//echo "Files: ";
-			//var_dump($files);
-			$socialLogos = $files;
-		}
-		*/
+		// get posts
+		$articles = getArticles(true, $cronModel);						
+		$postCounter = 0;
+		foreach($articles as $article): 									
+			$storageValues = explode(";", file_get_contents(STORAGE));			
+			// get number of post published
+			$posted = intval($storageValues[1]);			
+			
+			// insert advertise every a pre-defined number of posts
+			if($cronModel->advertiseEvery <= $posted) {		
+				$posted = 0;
+				$advertises = getArticles(false, $cronModel);				
+				if(count($advertises) > 0) {
+					// update advertises
+					$postCounter++;		
+					$storageValues = explode(";", file_get_contents(STORAGE));								
+					file_put_contents(STORAGE, $storageValues[0].';0;'.$storageValues[2].','.$advertises[0][0].';'.$storageValues[3]);
+					if(strlen($advertises[0][1]) > 0) {
+							// parse advertise
+							$articleParsed = parseArticle($advertises[0], $cronModel, $host);					
+							//var_dump($articleParsed);
+							// send to buffer
+							publish($buffer, $profiles, $articleParsed, $host);							
+					}		
+				}
+			}		
 
-		// UTF-8 format html article
-		$htmlStart = "<!DOCTYPE html><html lang=\"es\"><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"><meta charset=\"UTF-8\"><meta http-equiv=\"content-type\" content=\"text/html;charset=UTF-8\"></head><body>" . "\r\n";
-		$htmlEnd = "</body></html>";
-		foreach($randomArticles as $article): 			
+			if($postCounter == $cronModel->totalPosts) {
+				break;
+			}
+			
+			//update article id		
+			$postCounter++;
+			$storageValues = explode(";", file_get_contents(STORAGE));			
+			file_put_contents(STORAGE, $storageValues[0].';'.($posted+1).';'.$storageValues[2].';'.$storageValues[3].','.$article[0]);
+			
 			if(strlen($article[1]) == 0) {
 				continue;
 			}
-			// exit on post count
 			
-			// clear variables
-			$postTitle = ""; 
-			$postDesc = "";	
-			$postText = "";
-			$postLink = "";
-			$postImage = "";
-			// read html
-			$dom = new DOMDocument;
-			$dom->loadHTML($htmlStart . $article[1] . $htmlEnd);
-			
-			recursiveChildNode($dom, $postTitle, $postDesc, $postLink, $postImage);
-			
-			// set postlink if not defined
-			if(strlen($postLink) == 0){
-				// get aticle link
-				$query  = $db->getQuery(true);
-				$query->select('path');
-				$query->from('#__menu');
-				$query->where("link like '%id=" . $article[0] . "'");
-				$query->where("published = 1");
-				$query->where("LOWER(note) <> 'oculto'");
-				$db->setQuery($query);
-				$menus = $db->loadRowList();
-				if(count($menus) > 0) {
-					$postLink .= $callback_url . "/" . array_values(array_values($menus)[0])[0];				
-				}
-				else {
-					$postLink = "";
-				}
-			}
-			
-			// set postImage if not defined
-			if(strlen($postImage) == 0){
-				if(count($socialLogos) > 0){
-					$postImage = array_rand(array_flip($socialLogos), 1);
-					//echo "Image: ".$postImage;
-				}				
-			}
-			
-			//echo "Title:" . $postTitle;
-			//echo "<br> Desc:" . $postDesc;
-			send_posts($buffer, $profiles, $postTitle, $postDesc, $postLink, $postImage);
-			
+			// parse post
+			$articleParsed = parseArticle($article, $cronModel, $host);
+			//var_dump($articleParsed);
+			// send to buffer
+			publish($buffer, $profiles, $articleParsed, $host);
 		endforeach;	
 	}	
 	
-	// send each post to Buffer profiles (Face, Twitter, Google)
+	function getArticles($isPost, $cronModel) {
+		$db     = JFactory::getDBO();
+		jimport( 'joomla.access.access' );
+		$posts = array();
+		$storageValues = explode(";", file_get_contents(STORAGE));
+		
+		// define post or advertise category
+		$categoryId = $isPost ? $cronModel->categoryPostId : $cronModel->categoryAdvertiseId;
+		// get post or advertise article's id
+		$ids = $isPost ? $storageValues[3] : $storageValues[2];
+		
+		// get posts
+		$query  = $db->getQuery(true);
+		$query->select('id, introtext');
+		$query->from('#__content');
+		$query->where('catid = '.$categoryId); // social Category ID
+		$query->where('state = 1'); // published only
+		if($cronModel->ordered == '1') {
+			
+			$query->where('id NOT IN ('.$ids.')');
+			$query->order('ordering');
+			$db->setQuery($query, 0, $cronModel->totalPosts);
+			$articles = $db->loadRowList();
+			if(count($articles) == 0){				
+				// reach the end of articles: try to start again
+				// clear prev articles ids
+				if($isPost) {
+					file_put_contents(STORAGE, $storageValues[0].';'.$storageValues[1].';'.$storageValues[2].';0');
+				}
+				else {
+					file_put_contents(STORAGE, $storageValues[0].';'.$storageValues[1].';0;'.$storageValues[3]);
+				}
+								
+				$query  = $db->getQuery(true);
+				$query->select('id, introtext');
+				$query->from('#__content');		
+				$query->where('catid = '.$categoryId); // social Category ID
+				$query->where('state = 1'); // published only
+				$query->order('ordering');
+				$db->setQuery($query, 0, $cronModel->totalPosts);
+				$articles = $db->loadRowList();
+				// return if no articles found
+				if(count($articles) == 0){
+					echo 'No articles found for Social category Id = '.$categoryId;
+					return;
+				}
+			}
+			return $articles;
+		}
+		else {
+			// TODO: test the random functionality
+			$db->setQuery($query);
+			$articles = $db->loadRowList();
+			// return if no articles found
+			if(count($articles) == 0){
+				echo 'No articles found for Social category Id = '.$category_id;
+				return;
+			}
+			//filter articles randomly			
+			$quantity = intval($posts_count);
+			if(count($articles) < intval($posts_count)){
+				$quantity = count($articles);
+			}
+			$articles = array_random_assoc($articles, $quantity);
+			return $articles;			
+		}		
+	}
+	
+	function parseArticle($article, $cronModel, $host) {		
+		// UTF-8 format html article
+		$htmlStart = "<!DOCTYPE html><html lang=\"es\"><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"><meta charset=\"UTF-8\"><meta http-equiv=\"content-type\" content=\"text/html;charset=UTF-8\"></head><body>" . "\r\n";
+		$htmlEnd = "</body></html>";		
+
+		// read article html
+		$dom = new DOMDocument;
+		$dom->loadHTML($htmlStart . $article[1] . $htmlEnd);
+		
+		$parsed = new ArticleParsedModel();				
+		return recursiveChildNode($dom, $parsed, $host);		
+	}
+	
+	class ArticleParsedModel {
+		public $postTitle = ""; 
+		public $postDesc = "";	
+		public $postText = "";
+		public $postLink = "";
+		public $postImage = "";
+	}
+	
+	// send each post to Buffer profiles (Face, Twitter, Instagram)
 	/*
 	Youtube
 		-Link
@@ -179,51 +247,53 @@
 	Link
 		-Link
 	*/
-	function send_posts($buffer, $profiles, $postTitle, $postDesc, $postLink, $postImage) {		
+	function publish($buffer, $profiles, $articleParsed, $host) {		
 		foreach ($profiles as $profile) {
 			//var_dump($profile);
+			
+			// instagram config
+			if($profile->service == 'instagram'){
+				// default instagram image
+				if(strlen($articleParsed->postImage) == 0) {
+					$articleParsed->postImage = $host . '/images/instagram.jpg';
+				}
+				// instagram does not accept link
+				// so removes link and append to post desc
+				if(strlen($articleParsed->postLink) != 0) {
+					$articleParsed->postDesc = $articleParsed->postLink . "\r\n" . $articleParsed->postDesc;
+					$articleParsed->postLink = '';
+				}
+			}
+
+			// parse post text
+			$postText =  parseTextByProfile($profile, $articleParsed->postTitle, $articleParsed->postDesc); 			
+			
 			$options = array();
-			$postText =  formatPostbyProfile($profile, $postTitle, $postDesc); 
-			if(strpos($postLink, "youtube.com/") !== false && strlen($postText) == 0) {
-				// only youtube playlist
-				$options = array('media[link]' => $postLink, 'profile_ids[]' => $profile->id, 'shorten' => false);
+			// image
+			if(strlen($articleParsed->postImage) != 0) {
+				if(strlen($articleParsed->postLink) == 0 || $profile->service != 'facebook' && $profile->service != 'twitter') {
+					$options['media[photo]'] = $articleParsed->postImage;
+				}
+				$options['media[thumbnail]'] = $articleParsed->postImage;
+			}			
+			// link
+			if(strlen($articleParsed->postLink) != 0) {
+				$options['media[link]'] = $articleParsed->postLink;
+				if(!array_key_exists('media[photo]', $options)) {
+					$options['media[picture]'] = $articleParsed->postImage;
+					//$options['media[title]'] = 'Mi titulo';
+					//$options['media[description]'] = 'Mi descripción';					
+				}				
 			}
-			elseif(strpos($postLink, "youtube.com/") !== false && strlen($postText) != 0){
-				// only youtube playlist and text
-				$options = array('text' => $postText, 'media[link]' => $postLink, 'profile_ids[]' => $profile->id, 'shorten' => false);
+			// shorten link only for twitter and NOT youtube video link
+			if($profile->service != 'twitter' || strpos($articleParsed->postLink, "youtube.com/") !== false) {
+				$options['shorten'] = false;
 			}
-			elseif(strlen($postImage) != 0 && strlen($postText) == 0 && strlen($postLink) == 0) {
-				// only image
-				$options = array('media[picture]' => $postImage, 'profile_ids[]' => $profile->id);
+			// text
+			if(strlen($postText) != 0) {
+				$options['text'] = $postText;
 			}
-			elseif(strlen($postImage) != 0 && strlen($postText) != 0 && strlen($postLink) == 0) {
-				// only image and text
-				$options = array('text' => $postText, 'media[picture]' => $postImage, 'media[thumbnail]' => $postImage, 'profile_ids[]' => $profile->id);
-			}
-			elseif(strlen($postImage) != 0 && strlen($postText) == 0 && strlen($postLink) != 0) {
-				// only image and link
-				$options = array('text' => $postText, 'media[link]' => $postLink, 'media[picture]' => $postImage, 'profile_ids[]' => $profile->id);
-			}
-			elseif(strlen($postImage) != 0 && strlen($postText) != 0 && strlen($postLink) != 0) {
-				// All: image and text and link
-				$options = array('text' => $postText, 'media[link]' => $postLink, 'media[picture]' => $postImage, 'profile_ids[]' => $profile->id);
-			}
-			elseif(strlen($postText) != 0 && strlen($postImage) == 0 && strlen($postLink) == 0) {
-				// only text
-				$options = array('text' => $postText, 'profile_ids[]' => $profile->id);
-			}					
-			elseif(strlen($postText) != 0 && strlen($postImage) == 0 && strlen($postLink) != 0) {
-				// only text and link
-				$options = array('text' => $postText, 'media[link]' => $postLink, 'profile_ids[]' => $profile->id);
-			}
-			elseif(strlen($postText) == 0 && strlen($postImage) == 0 && strlen($postLink) != 0) {
-				// only link
-				$options = array('media[link]' => $postLink, 'profile_ids[]' => $profile->id);
-			}
-			else {
-				// default
-				$options = array('text' => $postText, 'media[link]' => $postLink, 'profile_ids[]' => $profile->id);
-			}
+			$options['profile_ids[]'] = $profile->id;
 
 			// send to buffer api
 			$buffer->go('/updates/create', $options);
@@ -231,17 +301,14 @@
 			// print restuls
 			echo LB.'Posted to '.$profile->service.' profile: ';
 			echo LB."Text: ".$postText;
-			echo LB."Link: ".$postLink;
-			if(strpos($postLink, "youtube.com/") === false) {
-				if(strlen($postImage) != 0) {
-					echo LB."Image: ".$postImage;
-				}
-			}
+			echo LB."Link: ".$articleParsed->postLink;			
+			echo LB."Image: ".$articleParsed->postImage;
+			
 			echo LB.'--------------'.LB;
 		}
 	}
 	
-	// format the post, every social network has limitations
+	// format the post text, every social network has length limitations
 	/*
 	Twitter: 140
 	Pinterest: 500
@@ -251,18 +318,20 @@
 	Facebook Groups: 5,000
 	LinkedIn Profiles: 700
 	LinkedIn Pages: 600
-	Google+ Profiles: 5,000
-	Google+ Pages: 5,000
 	*/	
-	function formatPostbyProfile($profile, $postTitle, $postDesc) {		
+	function parseTextByProfile($profile, $postTitle, $postDesc) {		
 		$text = "";
 		if($profile->service == "twitter") {
 			$text = $postTitle . " " . $postDesc;
 			correctLenght(130, $text);
 		}
-		elseif($profile->service == "facebook" || $profile->service == "google") {
+		elseif($profile->service == "facebook") {
 			$text = $postTitle . "\r\n" . $postDesc;
 			correctLenght(4900, $text);
+		}
+		elseif($profile->service == "instagram") {
+			$text = $postTitle . "\r\n" . $postDesc;
+			correctLenght(2100, $text);
 		}
 		else {
 			$text = $postTitle . " " . $postDesc;
@@ -288,48 +357,75 @@
 	}
 	
 	// recursively iterates throght all html dom elements and set the title and desc
-	function recursiveChildNode($element, &$postTitle, &$postDesc, &$postLink, &$postImage) {
+	function recursiveChildNode($element, $parsed, $host) {
 		$utils = new Utils();
 		foreach($element->childNodes as $child) {
-			//echo "<br>Child: <br>";
-			//var_dump($child);
 			if(isset($child->tagName)) {
-				if($child->tagName == 'h1' || ($child->tagName == 'p' && strlen($postTitle) == 0)) {
-					$postTitle =  strip_tags($child->textContent);
-				}
-				elseif($child->tagName == 'p' && strlen($postDesc) == 0) {
-					if(!$utils->endsWith($postTitle, ".")) {
-						$postTitle .= "."; // append '.' if not have it
+				if($child->tagName == 'h1' || ($child->tagName == 'p' && strlen($parsed->postTitle) == 0)) {
+					$parsed->postTitle =  strip_tags($child->textContent);
+				}				
+				elseif($child->tagName == 'p' && strlen($parsed->postDesc) == 0) {
+					if(!$utils->endsWith($parsed->postTitle, ".")) {
+						$parsed->postTitle .= "."; // append '.' if not have it
 					}
-					$postDesc = strip_tags($child->textContent);
+					$parsed->postDesc = strip_tags($child->textContent);
 				}
-				elseif($child->tagName == 'iframe' && strlen($postLink) == 0) {
+				elseif($child->tagName == 'iframe' && strlen($parsed->postLink) == 0) {
 					//echo 'iframe: ';
 					//var_dump($child->attributes);
 					foreach($child->attributes as $attribute) {
 						if($attribute->name == "src"){
-							// overwrite postLink only for youtube playlists
+							// youtube playlists
 							if(strpos($attribute->nodeValue, "youtube.com/") !== false && strpos($attribute->nodeValue, "list=") !== false) {
-								$postLink = "https://www.youtube.com/playlist?list=" . $utils->after_last("=", $attribute->nodeValue);
+								$parsed->postLink = "https://www.youtube.com/playlist?list=" . $utils->after_last("=", $attribute->nodeValue);
+							} // youtube videos
+							elseif(strpos($attribute->nodeValue, "youtu") !== false) {
+								$parsed->postLink = $attribute->nodeValue;
 							}
 						}
 					}
 				}
-				elseif($child->tagName == 'img' && strlen($postImage) == 0) {
+				elseif($child->tagName == 'a' && strlen($parsed->postLink) == 0) {
+					foreach($child->attributes as $attribute) {
+						if($attribute->name == "href"){
+							if(strpos($attribute->nodeValue, $host) !== false || strpos($attribute->nodeValue, "//") !== false) {
+								$parsed->postLink = $attribute->nodeValue;
+							}
+							else {
+								if($utils->startsWith($attribute->nodeValue, '/')) {
+									$parsed->postLink = $host . $attribute->nodeValue;
+								}
+								else {
+									$parsed->postLink = $host . '/' .$attribute->nodeValue;
+								}
+							}
+						}
+					}
+				}
+				elseif($child->tagName == 'img' && strlen($parsed->postImage) == 0) {
 					//echo 'img: ';
 					//var_dump($child->attributes);
 					foreach($child->attributes as $attribute) {
 						if($attribute->name == "src"){
-							$postImage = $attribute->nodeValue;
+							if(strpos($attribute->nodeValue, $host) !== false || strpos($attribute->nodeValue, "//") !== false) {								
+								$parsed->postImage = $attribute->nodeValue;
+							}
+							else {
+								if($utils->startsWith($attribute->nodeValue, '/')) {
+									$parsed->postImage = $host . $attribute->nodeValue;
+								}
+								else {
+									$parsed->postImage = $host . '/' .$attribute->nodeValue;
+								}
+							}
 							//echo $postImage;
 						}
 					}
-				}
-				else {
-					recursiveChildNode($child, $postTitle, $postDesc, $postLink, $postImage);
-				}
+				}				
+				$parsed = recursiveChildNode($child, $parsed, $host);				
 			}			
-		}	
+		}
+		return $parsed;
 	}
 	
 	// randomly selects X items of an array
@@ -345,11 +441,12 @@
 	}
 	
 	// check wheter a task must run based on last run date and every day variables
-	function checkTaskMustRun($everyEachDays){
-		createStorage(STORAGE, $everyEachDays);
+	function checkTaskMustRun($runsEveryEachDay){
+		createStorage(STORAGE, $runsEveryEachDay);
+		$storageValues = explode(";", file_get_contents(STORAGE));
 		
-		$currentDate = JFactory::getDate()->format('Y-m-d');
-		$prevDate = new DateTime(file_get_contents(STORAGE));
+		$currentDate = JFactory::getDate()->format('Y-m-d');		
+		$prevDate = new DateTime($storageValues[0]);
 		$prevDate = $prevDate->format('Y-m-d');
 		
 		// day difference
@@ -357,13 +454,13 @@
 		$interval = $utils->dateDifference($prevDate, $currentDate);
 		
 		// check with the every day parameter
-		if($interval >= $everyEachDays) {
+		if($interval >= $runsEveryEachDay) {
 			// update storage			
-			file_put_contents(STORAGE, $currentDate);
+			file_put_contents(STORAGE, $currentDate.';'.$storageValues[1].';'.$storageValues[2].';'.$storageValues[3]);
 			return true;
 		}
 		
-		echo LB."This task runs every ".$everyEachDays." day/s".LB;
+		echo LB."This task runs every ".$runsEveryEachDay." day/s".LB;
 		echo "Last time it ran: ".$prevDate.LB;
 		
 		return false;
@@ -374,9 +471,64 @@
 		if(file_exists(STORAGE) !== true){ // if file not exists
 			$currentDate = JFactory::getDate()->format('Y-m-d');
 			$newdate = strtotime('-'.$everyEachDays.' hour', strtotime($currentDate));
-			file_put_contents(STORAGE, date('Y-m-d', $newdate)); // create file with default content
+			file_put_contents(STORAGE, date('Y-m-d', $newdate).';0;0;0'); // create file with default content
 		}
 	}	
+	
+	/*
+		// OLD functionality commented out
+	
+		// get postImage from /images/social_logo
+		$socialLogos = array();
+		
+		$directory	= JPath::clean( JPATH_BASE . "/images/social_logo" );
+		// directory exists
+		if(is_dir($directory)){
+			$filter		= '([^\s]+(\.(?i)(jpg|png|gif|bmp))$)';
+			$exclude	= array('index.html', '.svn', 'CVS', '.DS_Store', '__MACOSX', '.htaccess');
+			$excludefilter = array();			
+			// Get all images in the directory
+			$files	= JFolder::files($directory, $filter, true, true, $exclude, $excludefilter);
+			foreach($files as $key=>$path)
+			{
+				$path = substr($path, strlen(JPATH_BASE) - strlen($path) + 1);
+				$path = JPath::clean( $path, "/" );
+				$files[$key] = $callback_url."/$path";
+			}			
+			//echo "Files: ";
+			//var_dump($files);
+			$socialLogos = $files;
+		}
+		
+		// set postImage if not defined
+		if(strlen($postImage) == 0){
+			if(count($socialLogos) > 0){
+				$postImage = array_rand(array_flip($socialLogos), 1);
+				//echo "Image: ".$postImage;
+			}				
+		}
+	*/
+	
+	/*
+	// set postlink if not defined
+			if(strlen($postLink) == 0){
+				// get aticle link
+				$query  = $db->getQuery(true);
+				$query->select('path');
+				$query->from('#__menu');
+				$query->where("link like '%id=" . $post[0] . "'");
+				$query->where("published = 1");
+				$query->where("LOWER(note) <> 'oculto'");
+				$db->setQuery($query);
+				$menus = $db->loadRowList();
+				if(count($menus) > 0) {
+					$postLink .= $callback_url . "/" . array_values(array_values($menus)[0])[0];				
+				}
+				else {
+					$postLink = "";
+				}
+			}	
+	*/
 	
 	class BufferApp {
 		private $client_id;
@@ -644,6 +796,5 @@
 		function set_callback_url($callback_url) {
 			$this->callback_url = $callback_url;
 		}
-	}
-	
+	}	
 ?>

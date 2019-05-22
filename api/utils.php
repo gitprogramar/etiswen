@@ -4,7 +4,9 @@
 	define('JPATH_ROOT', realpath(dirname(__FILE__).'/../') );	
 	
 	class Utils {
-		protected $timer;
+		protected $start;
+		protected $startWatch;
+		protected $endWatch;
 
 		public function __construct($base=null) {
 			if(isset($base))
@@ -19,6 +21,7 @@
 			require_once ( JPATH_ROOT .'/libraries/vendor/phpmailer/phpmailer/class.phpmailer.php');
 			require_once ( JPATH_ROOT .'/libraries/vendor/phpmailer/phpmailer/class.smtp.php');
 			require_once ( JPATH_ROOT .'/administrator/components/com_fields/helpers/fields.php');	
+			$this->start = JFactory::getDate()->toSQL();
 		}
 		
 		function sendMail($content, $subject="", $to="", $toName="", $from="", $fromName="", $arraySearch=array(), $arrayReplace=array()) 
@@ -130,20 +133,34 @@
 			else {
 				// webserver
 				define("LB", "<br>");
-				define('STORAGE', '/home/u510425236/public_html/cron/test_storage.txt');
+				define('STORAGE', $storage);
 				// skip robots
 				echo '<html><head><meta name="robots" content="noindex, nofollow"></head><body></body></html>'.LB;
 			}
-			$this->timer = LB.LB."Task performance:";
-			$this->timer .= LB."Started: ".JFactory::getDate()->toSQL();
 			
+			$this->startWatch = microtime(true);					
 			$this->login("cron", $pass, "site");
 		}
 		
 		function cronEnd() {
-			$this->timer .= LB."Finished: ".JFactory::getDate()->toSQL();
-			echo $this->timer;
+			$this->endWatch = microtime(true);
+			$execTime = round($this->endWatch - $this->startWatch, 2);
+			
+			$result = LB.LB."Task performance:";
+			$result .= LB."Started: ".$this->start;						
+			$result .= LB."Execution Time: ".$execTime .' seconds.';
+			echo $result;
 			$this->logout("site");
+		}
+		
+		function userIsLogin($application) {
+			$app = JFactory::getApplication($application);
+			$user = JFactory::getUser(); 
+			$userId = $user->get('id');	
+			if($userId == 0) {		
+				echo "Access denied.";
+				exit();
+			}
 		}
 		
 		/* Set enterprise data session */
