@@ -736,6 +736,18 @@
 			
 		}
 		
+		/* Validate string is a valid date */
+		/*
+			validateDate('2012-02-28 12:12:12'); # true
+			validateDate('2012-02-30 12:12:12'); # false
+		
+		*/
+		function dateIsValid($date, $format = 'Y-m-d H:i:s')
+		{
+			$d = DateTime::createFromFormat($format, $date);
+			return $d && $d->format($format) == $date;
+		}
+		
 		// Smart Sub-string privates
 		
 		//after ('@', 'biohazard@online.ge');
