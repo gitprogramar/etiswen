@@ -414,6 +414,11 @@
 			return;
 		}
 		
+		function rgbColor($hexColor) {
+			list($r, $g, $b) = sscanf($hexColor, "#%02x%02x%02x");
+			return "$r, $g, $b";			
+		}
+		
 		function userGetByName($name) {			
 			$db = JFactory::getDBO();
 			$db->setQuery($db->getQuery(true)

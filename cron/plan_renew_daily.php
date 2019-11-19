@@ -12,7 +12,7 @@
 		require_once ( JPATH_ROOT .'/api/utils.php');	
 				
 		$utils = new Utils();
-		$utils->cronStart((string)$argv[1]);
+		$utils->cronStart((string)$argv[1]);		
 		
 		dowork();
 		
