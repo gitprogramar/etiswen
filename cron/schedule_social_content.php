@@ -159,7 +159,7 @@
 		if($cronModel->ordered == '1') {
 			
 			$query->where('id NOT IN ('.$ids.')');
-			$query->order('ordering');
+			$query->order('ordering DESC');
 			$db->setQuery($query, 0, $cronModel->totalPosts);
 			$articles = $db->loadRowList();
 			if(count($articles) == 0){				
@@ -177,7 +177,7 @@
 				$query->from('#__content');		
 				$query->where('catid = '.$categoryId); // social Category ID
 				$query->where('state = 1'); // published only
-				$query->order('ordering');
+				$query->order('ordering DESC');
 				$db->setQuery($query, 0, $cronModel->totalPosts);
 				$articles = $db->loadRowList();
 				// return if no articles found

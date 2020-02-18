@@ -240,6 +240,7 @@
 			$customer->bufferId = "";
 			$customer->bufferToken = "";
 			$customer->bufferSecret = "";
+			$customer->dollar = "";
 			
 			$customer->description = "";
 			$customer->address = "";
@@ -286,6 +287,8 @@
 					$customer->bufferToken = $field->value;
 				elseif($field->name == "buffer-secret")
 					$customer->bufferSecret = $field->value;
+				elseif($field->name == "dollar")
+					$customer->dollar = $field->value;
 				elseif($field->name == "description")
 					$customer->description = $field->value;
 				elseif($field->name == "address")
