@@ -97,6 +97,9 @@
 		if($json["action"] == "get"){				
 			echo json_encode($item->get($json));
 		}
+		else if($json["action"] == "getProducts"){				
+			echo json_encode($item->getProducts($json));
+		}
 	}
 	return;
 ?>

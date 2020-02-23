@@ -20,7 +20,14 @@
 			require_once ( JPATH_ROOT .'/libraries/vendor/joomla/filesystem/src/Folder.php');
 			require_once ( JPATH_ROOT .'/libraries/vendor/phpmailer/phpmailer/class.phpmailer.php');
 			require_once ( JPATH_ROOT .'/libraries/vendor/phpmailer/phpmailer/class.smtp.php');
-			require_once ( JPATH_ROOT .'/administrator/components/com_fields/helpers/fields.php');	
+			require_once ( JPATH_ROOT .'/administrator/components/com_fields/helpers/fields.php');			
+			if (!class_exists("Thumbnail")) {
+				require_once(JPATH_ROOT .'/libraries/thumbnail/thumbnail.inc.php');
+			}
+			jimport('joomla.filesystem.folder');
+			jimport('joomla.filesystem.file');
+			jimport('joomla.filesystem.path');
+			
 			$this->start = JFactory::getDate()->toSQL();
 		}
 		
@@ -842,5 +849,47 @@
 
 			return (substr($haystack, -$length) === $needle);
 		}
+		/**
+	 * @param $full_image_path
+	 * @param $thumb_image_path
+	 * @param $image_width
+	 *
+	 * @return bool
+	 */
+	public static function createThumbImage($full_image_path, $thumb_image_path, $image_width)
+	{
+
+		if (!JFile::exists($full_image_path)) {
+			return false;
+		}
+		if (!JFolder::exists(dirname($thumb_image_path))) {
+			JFolder::create(dirname($thumb_image_path));
+		}
+		$current_size = 0;
+
+		if (JFile::exists($thumb_image_path)) {
+			$existing_thumb = new Thumbnail($thumb_image_path);
+			$current_size   = $existing_thumb->getCurrentWidth();
+			$existing_thumb->destruct();
+		}
+
+		// create a new shelf image if the it doesnt exists, is older the full image, of if the image size has changed
+		if (!JFile::exists($thumb_image_path) || (filemtime($full_image_path) > filemtime($thumb_image_path)) || $current_size != $image_width) {
+			$thumb = new Thumbnail($full_image_path);
+
+			if ($thumb->error) {
+				echo "ERROR: " . $thumb->errmsg . ": " . $full_image_path;
+				return false;
+			}
+			$thumb->resize($image_width);
+			if (!is_writable(dirname($thumb_image_path))) {
+				$thumb->destruct();
+				return false;
+			}
+			$thumb->save($thumb_image_path);
+			$thumb->destruct();
+		}
+		return true;
 	}
+}
 ?>

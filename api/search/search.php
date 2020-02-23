@@ -37,7 +37,8 @@
 					$selects[] = "content.created as created";
 				else if($param == "route")
 					$selects[] = "menu.path as route";
-			}			
+			}
+			$selects[] = "'article' as type";
 			$db = JFactory::getDBO();
 			$query  = $db->getQuery(true);
 			// select
@@ -56,8 +57,8 @@
 			foreach($words as $word) {				
 				$where .= " AND (LOWER(introtext) LIKE LOWER('%".$word."%') OR LOWER(content.title) LIKE LOWER('%".$word."%'))";
 			}	
-			if(isset($params["whereClause"])) {
-				$where .= " ".$params["whereClause"];
+			if(isset($params["whereCustomArticle"])) {
+				$where .= " ".$params["whereCustomArticle"];
 			}
 			
 			$query->where($where);
@@ -87,7 +88,8 @@
 						$selects[] = "cart.checked_out_time as created";
 					else if($param == "route")
 						$selects[] = "CONCAT(menu.path,'?filter=',cart.id) as route";
-				}	
+				}
+				$selects[] = "'cart' as type";				
 				$query2  = $db->getQuery(true);
 				// select
 				$query2->select($selects);
@@ -103,8 +105,8 @@
 					$where .= " AND (LOWER(cart.name) LIKE LOWER('%".$word."%') OR LOWER(cart.description) LIKE LOWER('%".$word."%'))";
 				}
 				
-				if(isset($params["whereClause"])) {
-					$where .= " ".$params["whereClause"];
+				if(isset($params["whereCustomCart"])) {
+					$where .= " ".$params["whereCustomCart"];
 				}			
 				$query2->where($where);
 				
@@ -149,21 +151,120 @@
 			$db->setQuery("SELECT FOUND_ROWS()");
 			$total = $db->loadResult();
 			// return model
-			$model = new ArticleModel();
+			$model = new SearchModel();
 			$model->total = $total;
 			$model->page = $params["paging"]["page"];
 			$model->items = $itemsParsed;
 			$model->words = $words;
 			return $model;
+		}
+		
+		function getProducts($params){
+			$db = JFactory::getDBO();
+			// discount
+			$query1  = $db->getQuery(true);
+			$query1->select("params");
+			$query1->from("#__extensions");
+			$query1->where("element = 'com_rokquickcart'");
+			$db->setQuery($query1);
+			$result = $db->loadResult();
+			
+			$fieldParam = json_decode($result);
+			$discount= $fieldParam->{'discount'};
+			
+			// categories to search for
+			$filters = explode(',',$params["filter"]);
+			$categories = array();
+			foreach($filters as $filter) {
+				$formatted = preg_replace('/\s+/', '', $filter);
+				if(strlen($formatted) == 0)
+					continue;
+				$categories[] = $filter;
+			}
+			
+			$selects = array();			
+			foreach($params["select"] as $param) {				
+				if($param == "id" || $param == "total")
+					$selects[] = "cart.id as id";				
+				else if($param == "route")
+					$selects[] = "CONCAT(menu.path,'?filter=',cart.id) as route";
+				else if($param == "discount")
+					$selects[] = "'".$discount."' as discount";
+				else 
+					$selects[] = $param;
+			}				
+			$query  = $db->getQuery(true);
+			// select
+			$query->select($selects);
+			// join
+			$query->from("#__rokquickcart cart");
+			$query->join("LEFT", "#__menu menu ON LOWER(REPLACE(menu.alias, '-', ' ')) = LOWER(REPLACE(REPLACE(SUBSTRING_INDEX(SUBSTRING_INDEX(cart.params, '{\"', -1), '\":',1), '\/', ' '), '\\\', '')) ");
+			// where
+			/*$where .= " (content.language = '*' OR content.language LIKE '".$this->language->current."-%')";*/
+			$where = "cart.published = 1"; 
+			$where .= " AND menu.published = 1"; 
+			$where .= " AND menu.path IS NOT NULL";
+			foreach($categories as $category) {	
+				$where .= " AND LOCATE(LOWER('".$category."'),LOWER(cart.params))>0 ";
+			}
+			
+			if(isset($params["whereClause"])) {
+				$where .= " ".$params["whereClause"];
+			}			
+			$query->where($where);
+			/*
+			$response = array();
+			$response["value"] = $query->__toString();
+			echo json_encode($response);
+			return;
+			*/
+			// paging
+			if(isset($params["paging"])) {
+				// not working on joomla 3
+				//$query->setLimit($params["paging"]["limit"].','.$params["paging"]["limit"]*$params["paging"]["page"]); //  LIMIT,PAGE
+				$db->setQuery($query, $params["paging"]["page"]*$params["paging"]["limit"],$params["paging"]["limit"]);
+			}
+			else {
+				$db->setQuery($query);
+			}
+			
+			$items = $db->loadAssocList();
+			
+			$utils = new Utils();
+			/*strip out html*/
+			$itemsParsed = array();
+			foreach($items as $item) {
+				$output = $utils->htmlParse($item['description']);				
+				$item['description'] = $output;
+				$itemsParsed[] = $item;
+			}
+			
+			if(!in_array("total", $params["select"])){
+				$response = array();
+				$response["value"] = $itemsParsed;
+				echo json_encode($response);
+				return;
+			}
+			
+			// total items
+			$db->setQuery("SELECT FOUND_ROWS()");
+			$total = $db->loadResult();
+			// return model
+			$model = new SearchModel();
+			$model->total = $total;
+			$model->page = $params["paging"]["page"];
+			$model->items = $itemsParsed;
+			$model->words = $categories;
+			return $model;
 			
 		}
 	}
-	class ArticleModel {
+	class SearchModel {
 		public $total = 0;
 		public $page = 0;
 		public $items = array();
 		public $words = array();
-	}
+	}	
 	
 	/*QUERY*/
 	/*

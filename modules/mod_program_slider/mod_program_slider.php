@@ -9,7 +9,7 @@ $links	= array();
 $templateVideo = "";
 $templateImage = "";
 $templateAssets = "";
-
+$customParam = null;
 // Get parameters
 if (strlen($params->get('titles'))) {
 	$titles	= explode("\n", $params->get('titles'));
@@ -32,6 +32,9 @@ if (strlen($params->get('templateImage'))) {
 if (strlen($params->get('templateAssets'))) {
 	$templateAssets	= $params->get('templateAssets');
 }
+if(null !== $params->get('custom_param')) {
+	$customParam = strtolower(str_replace(' ','-',$params->get('custom_param')));
+}
 
 // Get Images
 $files = array();
@@ -45,8 +48,8 @@ else {
 }
 
 $index = 0;
-$html = '<div id="'.$module->position.'" class="slider"><div class="animate" draggable="true">';
-$dots = '<div id="dots"><div>';
+$html = '<div id="'.(null !== $customParam ? $customParam : $module->position).'" class="slider"><div class="animate" draggable="true">';
+$dots = '<div class="dots" style="width: 100% !important;"><div>';
 foreach($files as $file) {
 	$template = "";
 	if(strpos($file, ".mp4") !== false || strpos($file, ".webm") !== false || strpos($file, ".ogg") !== false) {
@@ -64,7 +67,7 @@ foreach($files as $file) {
 	$index++;
 }
 $html .= '</div>'.$dots.'</div></div></div>';
-eval('?>'.$html.$templateAssets.'<?"php";');
+eval('?>'.$html.$templateAssets.'<?php;');
 
 require JModuleHelper::getLayoutPath('mod_program_slider', $params->get('layout', 'default'));
 
