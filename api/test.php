@@ -48,5 +48,27 @@
 		$min = $info['minutes'];
 		$sec = $info['seconds'];
 		echo "$date/$month/$year $hour:$min:$sec";	
+		echo "<br>";
+		//----------------------------------------------------------------------------------------------
+		//Crea un usuario de prueba de Mercado Pago
+		//----------------------------------------------------------------------------------------------
+		/*require_once (JPATH_ROOT.'/mercadopago/mercadopago.php');
+		$mp = new MP ("115648826979517", "zI9e0KgvfbgsA5avYmstENIeshB23zCc");
+		$mp->sandbox_mode(true);
+		$accessToken = $mp->get_access_token();
+		$url ="https://api.mercadolibre.com/users/test_user?access_token=".$accessToken;
+		$valor1 = "MLA";
+		$parametros_post = json_encode(array(
+			 "site_id" => $valor1  ));
+		$respuesta = $mp->post("/users/test_user", $parametros_post);
+		echo "<br><br>";
+		$usuario = $respuesta["response"];
+		echo $usuario["nickname"];
+		echo "<br>";
+		echo $usuario["email"];
+		echo "<br>";
+		echo $usuario["password"];
+		echo "<br>";
+		*/
 ?>
 </body></html>

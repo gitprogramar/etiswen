@@ -66,8 +66,8 @@ foreach($files as $file) {
 	$dots .= '<span data-id="'.$index.'"></span>';
 	$index++;
 }
-$html .= '</div>'.$dots.'</div></div></div>';
-eval('?>'.$html.$templateAssets.'<?php;');
+$html .= '</div>'.$dots.'</div></div></div>'.$templateAssets;
+eval("?>$html");
 
 require JModuleHelper::getLayoutPath('mod_program_slider', $params->get('layout', 'default'));
 

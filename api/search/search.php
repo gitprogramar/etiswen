@@ -33,6 +33,8 @@
 					$selects[] = "content.title as title";
 				else if($param == "introtext")
 					$selects[] = "content.introtext as introtext";
+				else if($param == "image")
+						$selects[] = "'' as image";
 				else if($param == "created")
 					$selects[] = "content.created as created";
 				else if($param == "route")
@@ -84,6 +86,8 @@
 						$selects[] = "cart.name as title";
 					else if($param == "introtext")
 						$selects[] = "cart.description as introtext";
+					else if($param == "image")
+						$selects[] = "cart.image as image";
 					else if($param == "created")
 						$selects[] = "cart.checked_out_time as created";
 					else if($param == "route")

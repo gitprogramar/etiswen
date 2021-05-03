@@ -20,7 +20,8 @@
 			require_once ( JPATH_ROOT .'/libraries/vendor/joomla/filesystem/src/Folder.php');
 			require_once ( JPATH_ROOT .'/libraries/vendor/phpmailer/phpmailer/class.phpmailer.php');
 			require_once ( JPATH_ROOT .'/libraries/vendor/phpmailer/phpmailer/class.smtp.php');
-			require_once ( JPATH_ROOT .'/administrator/components/com_fields/helpers/fields.php');			
+			require_once ( JPATH_ROOT .'/administrator/components/com_fields/helpers/fields.php');	
+			require_once ( JPATH_ROOT .'/mercadopago/mercadopago.php');			
 			if (!class_exists("Thumbnail")) {
 				require_once(JPATH_ROOT .'/libraries/thumbnail/thumbnail.inc.php');
 			}
@@ -42,8 +43,12 @@
 				$from = $config->get('mailfrom');
 			if(!isset($fromName) || strlen(trim($fromName)) == 0)
 				$fromName = $config->get('fromname');			
-			if(!isset($subject) || strlen(trim($subject)) == 0)
+			if(!isset($subject) || strlen(trim($subject)) == 0) {
 				$subject =  $customer->subject.' - '.$config->get('sitename');
+			}
+			else if(strpos($subject, $config->get('sitename')) == false) {
+				$subject =  $subject.' - '.$config->get('sitename');
+			}
 			// body
 			$html = "<!DOCTYPE html><html lang=\"es\"><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"><meta charset=\"UTF-8\"><meta http-equiv=\"content-type\" content=\"text/html;charset=UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1\"></head><body>" . "\r\n";
 			$html .= str_replace($arraySearch, $arrayReplace, $content) . "\r\n";	
@@ -600,6 +605,30 @@
 			$html .= '<link rel="alternate" hreflang="x-default" href="'.($language->current == $language->default ? $current : $default).'" />';
 			
 			echo $html;
+		}
+		
+		function mercadopago() {
+			$db = JFactory::getDBO();
+			$db->setQuery($db->getQuery(true)
+				->select('params')
+				->from("#__extensions")
+				->where("element = 'com_rokquickcart'")
+				->setLimit(1)
+			);
+			$result = json_decode($db->loadResult());
+			$checkout_mode = $result->{'checkout_mode'};
+			
+			// mercado pago credentials
+			$mp;
+			if($checkout_mode == 'sandbox') {
+				// sandbox credentials
+				$mp = new MP ("4464481893117718", "a3OWd0dDQx4ZMD8ihqotWUasoeH6UsHH");
+			}
+			else {
+				// add production credentials
+				$mp = new MP ($result->{'client_id'}, $result->{'client_secret'});
+			}
+			return $mp;
 		}
 		
 		/*Removes all html tags, javascript and styles elements*/

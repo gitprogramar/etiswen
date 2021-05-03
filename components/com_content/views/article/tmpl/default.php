@@ -154,6 +154,16 @@ JHtml::_('behavior.caption');
 	<div itemprop="articleBody">
 		<?php
 			echo $this->item->text;
+			// custom styles/scripts on article
+			if(isset($this->item->metadata["xreference"])) {
+				echo str_replace('{style}','<style>',str_replace('{/style}','</style>',str_replace('{script}','<script>',str_replace('{/script}','</script>',$this->item->metadata["xreference"]))));
+			}
+			// replaces on ALL page
+			if(isset($this->item->xreference))  {
+				$replaces = explode(',',$this->item->xreference);
+				echo '<script>var replaces = '. json_encode($replaces).';replaces.forEach(function(value, index){document.querySelectorAll(\'[data-replace="\'+(index+1)+\'"]\').forEach(function(element){element.innerHTML=value;});});</script>';
+				
+			}
 			if($this->item->category_alias == 'list') {				
 				/* Display child links for empty pages */
 				$menu = new Menu();
