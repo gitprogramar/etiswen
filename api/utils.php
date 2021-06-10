@@ -231,7 +231,7 @@
 			else 
 				$user = $this->userGetByName($profile.(isset($language->current) ? '-'.$language->current : ''));
 			$fields = FieldsHelper::getFields('com_users.user',  $user);
-			$parses = array(' ', '(', ')', '+', '-');	
+			$parses = array(' 15-', ' ', '(', ')', '+', '-');	
 			$json = json_decode($user->params);
 			// customer
 			$customer = new stdClass();
