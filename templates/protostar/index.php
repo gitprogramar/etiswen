@@ -3,7 +3,7 @@
    * @version   2.0 $
    * @author Programar
    * @copyright Copyright (C) 2018
-   */
+   */ 
    
    /* No Direct Access */
    defined('_JEXEC') or die('Restricted index access');
