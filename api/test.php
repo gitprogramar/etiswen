@@ -3,6 +3,8 @@
 		// test
 		define( '_JEXEC', 1 );
 		define('JPATH_ROOT', realpath(dirname(__FILE__).'/../') );
+		require_once ( JPATH_ROOT .'/libraries/vendor/phpmailer/phpmailer/class.phpmailer.php');
+		require_once ( JPATH_ROOT .'/libraries/vendor/phpmailer/phpmailer/class.smtp.php');
 		require_once ( JPATH_ROOT .'/api/utils.php');
 		//JFactory::getApplication("site");
 		/*
@@ -69,6 +71,67 @@
 		echo "<br>";
 		echo $usuario["password"];
 		echo "<br>";
+		*/
+		
+		/*Send email*/
+		/*
+		$mail = new PHPMailer;
+		// headers info
+		$mail->CharSet = 'UTF-8';
+		$mail->Encoding = "base64";
+		//Tell PHPMailer to use SMTP
+		$mail->isSMTP();
+		//Enable SMTP debugging
+		// 0 = off (for production use)
+		// 1 = client messages
+		// 2 = client and server messages
+		$mail->SMTPDebug = 2;
+		//Set the hostname of the mail server
+		$mail->Host = 'tls://smtp.gmail.com';
+		//Set the SMTP port number - likely to be 25, 465 or 587
+		$mail->Port = '587';
+		//Whether to use SMTP authentication
+		$mail->SMTPAuth = true;
+		
+		$mail->SMTPSecure = 'tls';
+		//Setup the following configuration for smtp authentication
+		$mail->SMTPOptions = array(
+		'ssl' => array(
+		'verify_peer' => false,
+		'verify_peer_name' => false,
+		'allow_self_signed' => true
+		)
+		);
+		
+		
+		//Username to use for SMTP authentication
+		$mail->Username = 'info@logisticashc.com.ar';
+		//Password to use for SMTP authentication
+		$mail->Password = 'infolog1234';
+		//Set who the message is to be sent from
+		$mail->setFrom('info@logisticashc.com.ar');
+		//Set an alternative reply-to address
+		$mail->addReplyTo('info@logisticashc.com.ar', 'SHC');
+		//Set who the message is to be sent to
+		$mail->addAddress('rey.nico@outlook.com', 'Nicolas Rey');
+		//Set the subject line
+		$mail->Subject = 'consulta de correo';
+		// html
+		$mail->msgHTML('<p>prueba de correo</p>');
+		// attachment
+		if (isset($attachment) &&
+			$attachment['error'] == UPLOAD_ERR_OK) {
+				$mail->AddAttachment($attachment['tmp_name'],$attachment['name']);
+		}
+	
+		//send the message
+		if (!$mail->send()) {
+			echo '<br><br>Correo NO enviado: '.$mail->ErrorInfo;
+		}
+		else {
+			echo '<br><br>Correo Enviado!!!';
+			
+		}
 		*/
 ?>
 </body></html>

@@ -32,7 +32,7 @@
 			$this->start = JFactory::getDate()->toSQL();
 		}
 		
-		function sendMail($content, $subject="", $to="", $toName="", $from="", $fromName="", $arraySearch=array(), $arrayReplace=array()) 
+		function sendMail($content, $subject="", $to="", $toName="", $from="", $fromName="", $arraySearch=array(), $arrayReplace=array(), $attachment) 
 		{
 			// default data
 			$config = JFactory::getConfig();
@@ -95,8 +95,11 @@
 			$mail->Subject = $subject;
 			// html
 			$mail->msgHTML($html);
-			//Attach an image file
-			//$mail->addAttachment('images/phpmailer_mini.png');
+			// attachment
+			if (isset($attachment) &&
+				$attachment['error'] == UPLOAD_ERR_OK) {
+					$mail->AddAttachment($attachment['tmp_name'],$attachment['name']);
+			}
 		
 			//send the message
 			if (!$mail->send()) {
@@ -140,7 +143,8 @@
 				// crontask
 				define("LB", "\r\n"); 
 				if(strlen(trim($storage)) > 0)
-					define('STORAGE', getcwd().'/public_html'.$storage);				
+					define('STORAGE', $this->before('public_html',dirname(__FILE__)).'public_html'.$storage);
+					//define('STORAGE', getcwd().'/public_html'.$storage);				
 			}				
 			else {
 				// webserver
@@ -252,6 +256,10 @@
 			$customer->bufferId = "";
 			$customer->bufferToken = "";
 			$customer->bufferSecret = "";
+			$customer->keywordTitle = "";
+			$customer->email2 = "";
+			$customer->email3 = "";
+			$customer->email4 = "";
 			$customer->dollar = "";
 			
 			$customer->description = "";
@@ -299,6 +307,14 @@
 					$customer->bufferToken = $field->value;
 				elseif($field->name == "buffer-secret")
 					$customer->bufferSecret = $field->value;
+				elseif($field->name == "keywordtitle")
+					$customer->keywordTitle = $field->value;
+				elseif($field->name == "email-2")
+					$customer->email2 = $field->value;
+				elseif($field->name == "email-3")
+					$customer->email3 = $field->value;
+				elseif($field->name == "email-4")
+					$customer->email4 = $field->value;
 				elseif($field->name == "dollar")
 					$customer->dollar = $field->value;
 				elseif($field->name == "description")
