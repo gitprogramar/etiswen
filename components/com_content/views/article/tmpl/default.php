@@ -82,7 +82,7 @@ JHtml::_('behavior.caption');
 		<div itemprop="publisher" itemtype="https://schema.org/Organization" itemscope="">
 			<div itemprop="logo" itemscope itemtype="https://schema.org/ImageObject">
 			  <img alt="logo" src="<?= $customer->domain."/images/logo.png" ?>"/>
-			  <meta itemprop="url" content="<?= $customer->domain."/images/logo2.png" ?>">
+			  <meta itemprop="url" content="<?= $customer->domain."/images/logomini.png" ?>">
 			  <meta itemprop="width" content="60">
 			  <meta itemprop="height" content="60">
 			</div>
@@ -90,13 +90,10 @@ JHtml::_('behavior.caption');
 		</div>	
 	</div>
 	
-	<?php if ($params->get('show_title') || $params->get('show_author')) : ?>
 	<div class="page-header">
-		<?php if ($params->get('show_title')) : ?>
-			<h1 itemprop="headline">
-				<?php echo  ($this->item->category_alias != 'list' ? $this->escape($this->item->title) : $this->escape($this->item->params["page_title"])).'<span class="n-display"> | '.$customer->customername.'</span>'; ?>
+			<h1 itemprop="headline" <?php echo ($params->get('show_title') ? '' : 'class="n-display"')  ?>>
+				<?php echo  ($this->item->category_alias != 'list' ? $this->escape($this->item->title) : $this->escape($this->item->params["page_title"])).'<span class="n-display">'.(strlen($customer->keywordTitle)>0 ? $customer->keywordTitle : ' | '.$customer->customername).'</span>'; ?>
 			</h1>
-		<?php endif; ?>
 		<?php if ($this->item->state == 0) : ?>
 			<span class="label label-warning"><?php echo JText::_('JUNPUBLISHED'); ?></span>
 		<?php endif; ?>
@@ -107,7 +104,6 @@ JHtml::_('behavior.caption');
 			<span class="label label-warning"><?php echo JText::_('JEXPIRED'); ?></span>
 		<?php endif; ?>
 	</div>
-	<?php endif; ?>
 	<?php if (!$this->print) : ?>
 		<?php if ($canEdit || $params->get('show_print_icon') || $params->get('show_email_icon')) : ?>
 			<?php echo JLayoutHelper::render('joomla.content.icons', array('params' => $params, 'item' => $this->item, 'print' => false)); ?>
