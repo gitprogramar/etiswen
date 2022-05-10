@@ -1,6 +1,58 @@
+body {
+	font-size: 15px;
+}
+.view-login {
+	background-image: url(/images/login-bg.jpg);
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center;
+    font-size: 1.2em;	
+}
 #element-box {
 	text-align: center;
+	background-color: rgba(240,240,240,.7);
 }
 #form-login {
   text-align: left;
+}
+a.login-joomla { 
+	display: none; 
+}
+a.admin-logo span.icon-joomla:before {
+	content: "\e250" !important;
+	
+}
+.navbar-inner .container-fluid {
+	font-size: 18px;
+}
+.navbar .dropdown-menu, .navbar .nav-user {
+	font-size: 16px;
+}
+.navbar-inner, .navbar-inverse .navbar-inner {
+	background: #757575 !important;
+}
+.dropdown-menu li > a:hover, .dropdown-menu .active > a, .dropdown-menu .active > a:hover, .navbar-inverse .nav li.dropdown.open > .dropdown-toggle, .navbar-inverse .nav li.dropdown.active > .dropdown-toggle, .navbar-inverse .nav li.dropdown.open.active > .dropdown-toggle, #status.status-top {
+	background: #3c3c3c !important;
+	border-color: #3c3c3c !important;	
+}
+.header{
+	background: #a9a9a9 !important;
+}
+div.js-stools {
+	display: none;
+}
+#j-sidebar-container {
+	display: none;
+}
+#j-main-container {
+	width: 100%;	
+}
+#myTabTabs li:not(.active) {
+	display: none;
+}
+#toolbar-help, span.badge-success, span.badge-warning, #articleList thead th:nth-child(10), #articleList thead th:nth-child(11){
+	display: none;	
+}
+.form-vertical > *, #toolbar div[id]:not([id="toolbar-new"]):not([id="toolbar-trash"]):not([id="toolbar-apply"]):not([id="toolbar-cancel"]):not([id="toolbar-upload"]):not([id="toolbar-create"]) { 
+	display: none;
 }
