@@ -10,11 +10,16 @@
 		define( '_JEXEC', 1 );
 		define('JPATH_ROOT', realpath(dirname(__FILE__).'/../') );
 		require_once ( JPATH_ROOT .'/api/utils.php');	
+		setlocale(LC_TIME, "es_AR");
 				
 		$utils = new Utils();
-		$utils->cronStart((string)$argv[1]);		
 		
-		dowork();
+		$ps = (string)$argv[1];
+		if(!isset($ps) || strlen($ps) == 0)
+			$ps = '';		
+		
+		$utils->cronStart($ps);				
+		work();
 		
 		$utils->cronEnd();
 	}
@@ -24,7 +29,7 @@
 		echo $ex->getMessage();
 	}
 	
-	function dowork()
+	function work()
 	{	
 		$db     = JFactory::getDBO();
 		jimport( 'joomla.access.access' );	
@@ -35,147 +40,112 @@
 		$query->from('#__content');
 		$query->where('id = 24'); // article ID with HTML mail
 		$db->setQuery($query);
-		$articleContent = $db->loadRowList();
-		$htmlMail = array_values(array_values($articleContent)[0])[0]; //echo (str_replace('"','\"', $htmlMail));
-			
-		$domain; 		
-		$datewebdesign;
-		$datesocialnetwork;
-		$dateemailmarketing;
-		$timewebdesign;
-		$timesocialnetwork;
-		$timeemailmarketing;	
-			
-		// customer id group
-		$customerGroupId = 2; 
-		$customers = JAccess::getUsersByGroup($customerGroupId); //var_dump($customers); //echo $customers[0];	
+		$articleContent = $db->loadResult();
+		//echo (str_replace('"','\"', $articleContent));
+		
+		$query = $db->getQuery(true);
+		$query
+		    ->select(array('u.id', 'u.name', 'u.username', 'u.email', "SUBSTRING_INDEX(GROUP_CONCAT(fv.value SEPARATOR ','), ',', 1) AS `domain`", "SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(fv.value SEPARATOR ','), ',', 2), ',',-1) AS `startdate`", "SUBSTRING_INDEX(GROUP_CONCAT(fv.value SEPARATOR ','), ',', -1) AS `duration`"))
+            ->from($db->quoteName('#__users', 'u'))
+            ->join('INNER', $db->quoteName('#__user_usergroup_map', 'ugm').' ON '.$db->quoteName('ugm.user_id').' = '.$db->quoteName('u.id'))
+            ->join('INNER', $db->quoteName('#__fields_values', 'fv').' ON '.$db->quoteName('fv.item_id').' = '.$db->quoteName('u.id'))
+            ->join('INNER', $db->quoteName('#__fields', 'f').' ON '.$db->quoteName('f.id').' = '.$db->quoteName('fv.field_id'))
+            ->where($db->quoteName('ugm.group_id'). ' = 2 AND '.$db->quoteName('u.block'). ' = 0 AND ('.$db->quoteName('f.name'). ' = '."'domain'".' OR '.$db->quoteName('f.name'). ' LIKE '."'plan%')")
+            ->group($db->quoteName('u.id'));
+		//echo $query->dump().LB.LB;
+		$db->setQuery($query);
+		$customers = $db->loadRowList();
+
+        $status = "";
 		// iterate customers
-		foreach($customers as $id): 
-			// user
-			$customer = JFactory::getUser($id);	 //var_dump($customer);
-			// skip blocked users		
-			if($customer->block != 0) {
-				continue;
-			}
-			// get custom fields 
-			$query  = $db->getQuery(true);
-			$query->select('field.name, field.label, fieldvalue.value');
-			$query->from('#__fields field INNER JOIN #__fields_values fieldvalue ON field.id = fieldvalue.field_id');
-			$query->where('fieldvalue.item_id = '.$customer->id);
-			$db->setQuery($query);
-			$list = $db->loadRowList();
-			//var_dump($list);
-			
-			$domain = "";
-			$datewebdesign = "";
-			$datesocialnetwork = "";
-			$dateemailmarketing = "";
-			$timewebdesign = "";
-			$timesocialnetwork = "";
-			$timeemailmarketing = "";
-			
-			foreach($list as $field) {
-				if(strlen(trim($field[2])) == 0) {
-					continue;
-				}
-				if($field[0] == "domain") {
-					$domain = $field[2]; 						
-				}
-				elseif($field[0] == "datewebdesign") {
-					$datewebdesign = $field[2];
-				}
-				elseif($field[0] == "datesocialnetwork") {
-					$datesocialnetwork = $field[2];
-				}
-				elseif($field[0] == "dateemailmarketing") {
-					$dateemailmarketing = $field[2];
-				}
-				elseif($field[0] == "timewebdesign") {
-					$timewebdesign = $field[2];
-				}
-				elseif($field[0] == "timesocialnetwork") {
-					$timesocialnetwork = $field[2];
-				}
-				elseif($field[0] == "timeemailmarketing") {
-					$timeemailmarketing = $field[2];
-				}
-			}
-			
-			if(strlen(trim($datewebdesign)) > 0 && strlen(trim($timewebdesign))) {	
-				calculate_time("Dise&#241;o Web", $datewebdesign, $timewebdesign, $customer, $htmlMail);
-			}
-			if(isset($datesocialnetwork) && isset($timesocialnetwork)) {			
-				calculate_time("Redes Sociales", $datesocialnetwork, $timesocialnetwork, $customer, $htmlMail);
-			}
-			if(isset($dateemailmarketing) && isset($timeemailmarketing)) {			
-				calculate_time("Campa&#241;as de Correo", $dateemailmarketing, $timeemailmarketing, $customer, $htmlMail);
-			}
+		foreach($customers as $customer): 
+            $status .= calculateTime($customer, $articleContent);
 		endforeach;	
+		
+		sendStatus($status);
 	}
 
-	function calculate_time($service, $date, $time, $customer, $htmlMail) {	
-		$times = explode(" ", $time);
-		// calculates quantity of days
+	function calculateTime($customer, $articleContent) {	
 		$utils = new Utils();
-		$datediff = $utils->dateDifference(date("Y-m-d"), $date); 	
-		if(count($times) == 0 || count($times) == 1) {
-			return;
+		
+		$output = DIV."Customer: ".$customer[2].DIVEND;
+		
+		// current quantity of plan days
+		$currentDays = $utils->dateDifference(date("Y-m-d"), $customer[5]);
+		// quantity of remaining days
+		$leftDays = (365*$customer[6])-$currentDays;
+		if($currentDays < 0) {
+			$output .= DIV."Status: Plan duration ended".DIVEND;
 		}
-		//var_dump($customer);
-		//echo $domain.": ".$times[0]." ".mb_strtolower($times[1], "UTF-8").LB;
-
-		if(mb_strtolower($times[1], "UTF-8") == "gratis") {
-			echo $customer->username.": "."Service: ".$service." > Period: FREE > ".$datediff." days of service. ".LB;		
+		else {
+		    $output .= DIV."Status: Active".DIVEND;
 		}
-		elseif(mb_strtolower($times[1], "UTF-8") == "mes" || mb_strtolower($times[1], "UTF-8") == "meses") {
-			echo $customer->username.": "."Service: ".$service." > Period: ".$times[0]." MONTH/S > ".$datediff." days of service. ".LB;
-			if($times[0] == 1 && $datediff == 25 	    // 1 month
-			   || $times[0] == 2 && $datediff == 55	  	// 2 months
-			   || $times[0] == 3 && $datediff == 85		// 3 months
-			   || $times[0] == 4 && $datediff == 115	// 4 months
-			   || $times[0] == 5 && $datediff == 145	// 5 months
-			   || $times[0] == 6 && $datediff == 175	// 6 months		  
-			   ) {
-				send_mail($customer->email, $htmlMail, array($customer->username, $service, "5 d&#237;as"));			
-				echo "Email Sent: ".$service." expire in 5 days!".LB;
-			}
+		$output .= DIV."Duration: ".$customer[6].' year/s'.DIVEND;
+		$output .= DIV."Start Date: ".date("Y-m-d",strtotime($customer[5])).DIVEND;
+		$output .= DIV."End Date: ". date('Y-m-d', strtotime(date("Y-m-d") . '+ '.$leftDays.'days')).DIVEND;
+		$formated = utf8_encode(strftime("%A %e de %B de %G", strtotime(date("m/d/y") . '+ '.$leftDays.'days')));
+		$output .= DIV."Formated End Date: ".$formated.DIVEND;
+		$output .= DIV."Remaining days: ".$leftDays.DIVEND;
+		
+		if($leftDays == 30 || $leftDays == 15 || $leftDays == 5 || $leftDays == 1) {
+		    $output .= DIVBOTTOM."Email sent: yes".DIVEND;
+		    sendMail($customer[3], $articleContent, array($customer[1], $customer[2], $customer[4], $formated, $leftDays));
 		}
-		elseif(mb_strtolower($times[1], "UTF-8") == "año" || mb_strtolower($times[1], "UTF-8") == "años") {
-			echo $customer->username.": "."Service: ".$service." > Period: ".$times[0]." YEAR/S > ".$datediff." days of service. ".LB;
-			if($times[0] == 1 && $datediff == 360 		// 1 year
-			   || $times[0] == 2 && $datediff == 725	// 2 years
-			   || $times[0] == 3 && $datediff == 1090	// 3 years
-			   ) {
-				send_mail($customer->email, $htmlMail, array($customer->username, $service, "5 d&#237;as"));			
-				echo "Email Sent: ".$service." expire in 5 days!".LB;
-			}
+		else {
+		    $output .= DIVBOTTOM."Email sent: no".DIVEND;
 		}
+		echo $output;
+		return $output;
 	}
 
-	function send_mail($email, $htmlMail, $arrayReplace) 
+	function sendMail($email, $articleContent, $arrayReplace) 
 	{
 		$utils = new Utils();
+		$enterprise = $utils->enterpriseGet("admin-en");
+		//var_dump($enterprise->customer);
+		
 		// notify customer
 		$utils->sendMail(
-			$htmlMail, 		
+			$articleContent, 		
 			"Renovar Servicio",
 			$email,
 			"",
 			"",
 			"",
-			array("[customer]", "[service]", "[days]"),
+			array("[name]", "[username]", "[domain]", "[endDate]", "[days]"),
 			$arrayReplace
 		);
 		
-		$html = '<h2>Vencimiento de '.$arrayReplace[1].'</h2>';
-		$html .= '<p><strong>Usuario: '.$arrayReplace[0].'</strong></p>';
-		$html .= '<p><strong>Correo: '.$email.'</strong></p>';
-		$html .= '<p><strong>'.$arrayReplace[2].' restantes.</strong></p>';
-		
-		// notify
+		// send copy
 		$utils->sendMail(
-			$html, 		
-			"Vencimiento de ".$arrayReplace[1]			
+			$articleContent, 		
+			"Renovar Servicio",
+			$enterprise->customer->email,
+			"",
+			"",
+			"",
+			array("[name]", "[username]", "[domain]", "[endDate]", "[days]"),
+			$arrayReplace
 		);
+	}
+	
+	function sendStatus($status) {
+	    $info = getdate();
+		$day = $info['mday'];
+		
+		if((int)$day == 1) {
+    	    $utils = new Utils();
+    		$enterprise = $utils->enterpriseGet("admin-en");
+    	    // send status
+    		$utils->sendMail(
+    			$status, 		
+    			"Plan status report",
+    			$enterprise->customer->email
+    		);
+    		echo DIV."Status sent: yes".DIVEND;
+		}
+		else {
+		    echo DIV."Status sent: no".DIVEND;
+		}
 	}
 ?>
