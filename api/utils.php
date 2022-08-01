@@ -141,7 +141,10 @@
 			// static vars
 			if(substr(php_sapi_name(), 0, 3) == 'cli' || empty($_SERVER['REMOTE_ADDR'])) {
 				// crontask
-				define("LB", "\r\n"); 
+				define("LB", "\r\n");
+				define("DIV", "<div>");
+				define("DIVEND", "</div>");
+				define("DIVBOTTOM", '<div style="margin-bottom:10px;">');
 				if(strlen(trim($storage)) > 0)
 					define('STORAGE', $this->before('public_html',dirname(__FILE__)).'public_html'.$storage);
 					//define('STORAGE', getcwd().'/public_html'.$storage);				
@@ -149,6 +152,9 @@
 			else {
 				// webserver
 				define("LB", "<br>");
+				define("DIV", "<div>");
+				define("DIVEND", "</div>");
+				define("DIVBOTTOM", '<div style="margin-bottom:10px;">');
 				define('STORAGE', $storage);
 				// skip robots
 				echo '<html><head><meta name="robots" content="noindex, nofollow"></head><body></body></html>'.LB;
