@@ -284,6 +284,22 @@
 			$customer->instagram = "";
 			$customer->linkedin = "";
 			$customer->google  = "";
+						
+			// location
+			$location = new stdClass();
+			$location->ip = $this->getClientIP();
+			$location->country = "";
+			$location->state = "";
+			$location->city = "";
+			$location->zip = "";
+			$query = @unserialize (file_get_contents('//ip-api.com/php/'.$location->ip));
+			if ($query && $query['status'] == 'success') {
+				$location->country = $query['country'];
+				$location->state = $query['regionName'];
+				$location->city = $query['city'];
+				$location->zip = $query['zip'];
+			}
+			$customer->location = $location;
 			
 			// template
 			$template = new stdClass();			
@@ -942,5 +958,46 @@
 		}
 		return true;
 	}
+		
+	function analytics($customer) {
+		$input = JFactory::getApplication()->input;
+		$location = $customer->location;
+	    
+		// db connection.
+		$db = JFactory::getDbo();
+		$query = $db->getQuery(true);
+
+		$columns = array("content_id", "hit_date", "country", "state", "city", "zip", "ip");
+		$values = array($db->quote($input->get("id")), $db->quote(JFactory::getDate()->toSQL()), $db->quote($location->country), $db->quote($location->state), $db->quote($location->city), $db->quote($location->zip), $db->quote($location->ip));
+		$query
+			->insert($db->quoteName("#__analytics"))
+			->columns($db->quoteName($columns))
+			->values(implode(',', $values));
+		//echo $query->dump();    
+		$db->setQuery($query);
+		$db->execute();
+    	}
+		
+	function getClientIP()
+        {
+            $ipaddress = '';
+            if (isset($_SERVER['HTTP_CLIENT_IP'])) {
+                $ipaddress = $_SERVER['HTTP_CLIENT_IP'];
+            } else if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                $ipaddress = $_SERVER['HTTP_X_FORWARDED_FOR'];
+            } else if (isset($_SERVER['HTTP_X_FORWARDED'])) {
+                $ipaddress = $_SERVER['HTTP_X_FORWARDED'];
+            } else if (isset($_SERVER['HTTP_FORWARDED_FOR'])) {
+                $ipaddress = $_SERVER['HTTP_FORWARDED_FOR'];
+            } else if (isset($_SERVER['HTTP_FORWARDED'])) {
+                $ipaddress = $_SERVER['HTTP_FORWARDED'];
+            } else if (isset($_SERVER['REMOTE_ADDR'])) {
+                $ipaddress = $_SERVER['REMOTE_ADDR'];
+            } else {
+                $ipaddress = 'UNKNOWN';
+            }
+        
+            return $ipaddress;
+        }
 }
 ?>
