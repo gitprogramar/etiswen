@@ -292,12 +292,13 @@
 			$location->state = "";
 			$location->city = "";
 			$location->zip = "";
-			$query = @unserialize (file_get_contents('//ip-api.com/php/'.$location->ip));
-			if ($query && $query['status'] == 'success') {
-				$location->country = $query['country'];
-				$location->state = $query['regionName'];
-				$location->city = $query['city'];
-				$location->zip = $query['zip'];
+			$data = json_decode(file_get_contents('http://ip-api.com/json/'.$location->ip));
+			//var_dump($data);
+			if ($data && $data->status == 'success') {
+				$location->country = $data->country;
+				$location->state = $data->regionName;
+				$location->city = $data->city;
+				$location->zip = $data->zip;
 			}
 			$customer->location = $location;
 			
@@ -960,9 +961,12 @@
 	}
 		
 	function analytics($customer) {
-		$input = JFactory::getApplication()->input;
 		$location = $customer->location;
-	    
+		if(strlen(trim($location->country)) == 0)
+			return;
+
+		$input = JFactory::getApplication()->input;
+
 		// db connection.
 		$db = JFactory::getDbo();
 		$query = $db->getQuery(true);
@@ -976,7 +980,7 @@
 		//echo $query->dump();    
 		$db->setQuery($query);
 		$db->execute();
-    	}
+	}
 		
 	function getClientIP()
         {
