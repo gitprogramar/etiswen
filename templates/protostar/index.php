@@ -16,6 +16,7 @@
    $theme = $_SESSION["theme"];
    $language = $_SESSION["language"];
    $pos = $language->current . $customer->templateId;
+   $utils->analytics($customer);
 ?>
 <!DOCTYPE html>
 <html xml:lang="<?=$language->current; ?>" lang="<?=$language->current; ?>" >
