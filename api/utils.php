@@ -969,9 +969,11 @@
 		// db connection.
 		$db = JFactory::getDbo();
 		$query = $db->getQuery(true);
-
+				
+		date_default_timezone_set("America/Argentina/Buenos_Aires");
+        	$date = date('Y-m-d H:i:s');
 		$columns = array("content_id", "title", "url", "hit_date", "country", "state", "city", "zip", "ip", "isMobile", "resolution");
-		$values = array($db->quote($json['contentId']), $db->quote($json['title']), $db->quote($json['url']), $db->quote(JFactory::getDate()->toSQL()), $db->quote($json['country']), $db->quote($json['state']), $db->quote($json['city']), $db->quote($json['zip']), $db->quote($json['ip']), $db->quote($isMobile), $db->quote($json['width']."x".$json['height']));
+		$values = array($db->quote($json['contentId']), $db->quote($json['title']), $db->quote($json['url']), $db->quote($date), $db->quote($json['country']), $db->quote($json['state']), $db->quote($json['city']), $db->quote($json['zip']), $db->quote($json['ip']), $db->quote($isMobile), $db->quote($json['width']."x".$json['height']));
 		$query
 			->insert($db->quoteName("#__analytics"))
 			->columns($db->quoteName($columns))
