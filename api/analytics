@@ -1,0 +1,20 @@
+<?php	
+	// Store user analytics
+	define( '_JEXEC', 1 );
+	define('JPATH_ROOT', realpath(dirname(__FILE__).'/../') );
+	require_once ( JPATH_ROOT .'/api/utils.php');
+	
+	// parse json
+	$json = json_decode(file_get_contents('php://input'), true);
+	
+	if(isset($json)) {
+		$response = array();
+		$utils = new Utils();
+	  $message = $utils->analytics($json);
+		$response["value"] = true;
+		$response["message"] = $message;
+	  echo json_encode($response);
+	}
+	return;
+?>
+
