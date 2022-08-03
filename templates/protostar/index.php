@@ -16,7 +16,15 @@
    $theme = $_SESSION["theme"];
    $language = $_SESSION["language"];
    $pos = $language->current . $customer->templateId;
-   $utils->analytics($customer);
+  
+    $app = JFactory::getApplication();
+    $input = $app->input;
+    $contentId = $input->get("id");
+
+    $menu = $app->getMenu();
+    $active = $menu->getActive();
+    $title = $active->title;
+    $url = $_SERVER['REQUEST_URI'];
 ?>
 <!DOCTYPE html>
 <html xml:lang="<?=$language->current; ?>" lang="<?=$language->current; ?>" >
@@ -73,6 +81,27 @@ if(strlen($template->fontsecond)>0) {
 <script>
 var customer = <?= json_encode($customer)?>;
 var language = <?= json_encode($language)?>;
+
+var analytics = {};
+analytics.country = customer.location.country;
+analytics.state = customer.location.state;
+analytics.city = customer.location.city;
+analytics.zip = customer.location.zip;
+analytics.ip = customer.location.ip;
+analytics.width = screen.width;
+analytics.height = screen.height;
+analytics.contentId = <?= $contentId ?>;
+analytics.title = '<?= $title ?>';
+analytics.url = '<?= $url ?>';
+
+<?php if(!$utils->isBotDetected()) { ?>
+    window.addEventListener("load", function e(t) {
+        window.removeEventListener("load", e, !1), 
+        program.post("/api/analytics.php", analytics, function(e) {
+           console.log(e.message); 
+        });
+    });
+<?php } ?>
 </script>
 </body>
 </html>
