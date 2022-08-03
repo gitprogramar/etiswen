@@ -19,7 +19,7 @@
   
     $app = JFactory::getApplication();
     $input = $app->input;
-    $contentId = $input->get("id");
+    $contentId = $input->get("id") != null ? $input->get("id") : 0;
 
     $menu = $app->getMenu();
     $active = $menu->getActive();
